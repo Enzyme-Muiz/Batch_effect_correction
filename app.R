@@ -1,9 +1,20 @@
 #batch_correction
 library("shinyWidgets")
-library(ggplot2)
-library(Biobase)
-library(flowCore)
-library(FlowSOM)
+#library(BiocManager)
+#BiocManager::install("flowClust")
+#options(repos = BiocManager::repositories("flowCore", "Biobase", "FlowSOM", "flowClust", "flowViz"))
+#options(repos = BiocManager::repositories())
+#
+
+
+#getOption("repos")
+#getOption("repos")
+#library(ggplot2)
+#library(Biobase)
+#library(flowCore)
+#library(FlowSOM)
+#library(flowClust)
+#library(flowViz)
 ui<- fluidPage(
   tabsetPanel(
     tabPanel(title= "Batch_effect_viz",
@@ -24,7 +35,7 @@ ui<- fluidPage(
   fileInput(
     inputId="file1",
     label= NULL,
-    multiple = TRUE,
+    multiple = FALSE,
     accept = ".FCS",
     width = '250px',
     buttonLabel = "Browse",
@@ -34,7 +45,7 @@ ui<- fluidPage(
   fileInput(
     inputId="file2",
     label= NULL,
-    multiple = TRUE,
+    multiple = FALSE,
     accept = ".FCS",
     width = '250px',
     buttonLabel = "Browse",
@@ -45,7 +56,7 @@ ui<- fluidPage(
            fileInput(
              inputId="file3",
              label= NULL,
-             multiple = TRUE,
+             multiple = FALSE,
              accept = ".FCS",
              width = '250px',
              buttonLabel = "Browse",
@@ -55,7 +66,7 @@ ui<- fluidPage(
            fileInput(
              inputId="file4",
              label= NULL,
-             multiple = TRUE,
+             multiple = FALSE,
              accept = ".FCS",
              width = '250px',
              buttonLabel = "Browse",
@@ -66,7 +77,7 @@ ui<- fluidPage(
              fileInput(
                inputId="file5",
                label= NULL,
-               multiple = TRUE,
+               multiple = FALSE,
                accept = ".FCS",
                width = '250px',
                buttonLabel = "Browse",
@@ -76,7 +87,7 @@ ui<- fluidPage(
              fileInput(
                inputId="file6",
                label= NULL,
-               multiple = TRUE,
+               multiple = FALSE,
                accept = ".FCS",
                width = '250px',
                buttonLabel = "Browse",
@@ -120,7 +131,80 @@ column(2,
 
   column(2,
   downloadButton('foo')
+   ),
+
+column(2,
+  dropdown(label = "FILES_INPUT",
+             inputId = "files_input",
+
+    fileInput(
+    inputId="file90",
+    label= NULL,
+    multiple = TRUE,
+    accept = ".FCS",
+    width = '200px',
+    buttonLabel = "Browse",
+    placeholder = "batch_1"
+  ),
+    fileInput(
+    inputId="file91",
+    label= NULL,
+    multiple = TRUE,
+    accept = ".FCS",
+    width = '200px',
+    buttonLabel = "Browse",
+    placeholder = "batch_2"
+  ),
+
+  fileInput(
+    inputId="file92",
+    label= NULL,
+    multiple = TRUE,
+    accept = ".FCS",
+    width = '200px',
+    buttonLabel = "Browse",
+    placeholder = "batch_3"
+  ),
+
+  fileInput(
+    inputId="file93",
+    label= NULL,
+    multiple = TRUE,
+    accept = ".FCS",
+    width = '200px',
+    buttonLabel = "Browse",
+    placeholder = "batch_4"
+  ),
+  fileInput(
+    inputId="file94",
+    label= NULL,
+    multiple = TRUE,
+    accept = ".FCS",
+    width = '200px',
+    buttonLabel = "Browse",
+    placeholder = "batch_5"
+  ),
+
+  fileInput(
+    inputId="file95",
+    label= NULL,
+    multiple = TRUE,
+    accept = ".FCS",
+    width = '200px',
+    buttonLabel = "Browse",
+    placeholder = "batch_6"
+  )
+
+
+
+
+
+
+
+    )
    )
+
+
 
   )
   ,
@@ -152,7 +236,9 @@ sliderInput("integer1", "Percentile:",
                   min = 1, max = 100,
                   value = 5),
 
- pickerInput("integer2", label= "parameters" ,choices=c("SD", "mean", "median"),  options = list(`actions-box` = TRUE), multiple = TRUE)
+ pickerInput("integer2", label= "parameters" ,choices=c("SD", "mean", "median"),  options = list(`actions-box` = TRUE), multiple = TRUE),
+
+ actionButton("action6", "Batch_Adjust")
      
 
   ),
@@ -211,26 +297,26 @@ tags$script(HTML(
 server<- function(input, output, session)
 {output$checking<- renderText({input$integer2})
 
-  options(shiny.maxRequestSize=100*1024^2)
+   options(shiny.maxRequestSize=100*1024^2)
   observe({
   file11 <- input$file1
   print(file11$datapath)
-  file.copy(file11$datapath, "C:\\Users\\oaona\\app_batch_correction\\www\\to_be_corrected\\Batch_1_anchorstim.fcs", overwrite = TRUE)
+  file.copy(file11$datapath, "to_be_corrected\\Batch_1_anchorstim.fcs", overwrite = TRUE)
   file22 <- input$file2
   print(file22$datapath)
-  file.copy(file22$datapath, "C:\\Users\\oaona\\app_batch_correction\\www\\to_be_corrected\\Batch_2_anchorstim.fcs", overwrite = TRUE)
+  file.copy(file22$datapath, "to_be_corrected\\Batch_2_anchorstim.fcs", overwrite = TRUE)
   file33 <- input$file3
   print(file33$datapath)
-  file.copy(file33$datapath, "C:\\Users\\oaona\\app_batch_correction\\www\\to_be_corrected\\Batch_3_anchorstim.fcs", overwrite = TRUE)
+  file.copy(file33$datapath, "to_be_corrected\\Batch_3_anchorstim.fcs", overwrite = TRUE)
   file44 <- input$file4
   print(file44$datapath)
-  file.copy(file44$datapath, "C:\\Users\\oaona\\app_batch_correction\\www\\to_be_corrected\\Batch_4_anchorstim.fcs", overwrite = TRUE)
+  file.copy(file44$datapath, "to_be_corrected\\Batch_4_anchorstim.fcs", overwrite = TRUE)
   file55 <- input$file5
   print(file55$datapath)
-  file.copy(file55$datapath, "C:\\Users\\oaona\\app_batch_correction\\www\\to_be_corrected\\Batch_5_anchorstim.fcs", overwrite = TRUE)
+  file.copy(file55$datapath, "to_be_corrected\\Batch_5_anchorstim.fcs", overwrite = TRUE)
   file66 <- input$file6
   print(file66$datapath)
-  file.copy(file66$datapath, "C:\\Users\\oaona\\app_batch_correction\\www\\to_be_corrected\\Batch_6_anchorstim.fcs", overwrite = TRUE)
+  file.copy(file66$datapath, "to_be_corrected\\Batch_6_anchorstim.fcs", overwrite = TRUE)
   
   onSessionEnded(function() {do.call(file.remove, list(list.files("C:\\Users\\oaona\\app_batch_correction\\www\\to_be_corrected\\", full.names = TRUE)))})
   onSessionEnded(function() {do.call(file.remove, list(list.files("C:\\Users\\oaona\\app_batch_correction\\www\\fcs_untransformed\\", full.names = TRUE)))})
@@ -247,8 +333,8 @@ server<- function(input, output, session)
 
 
     #{system(paste("rm -f", "C:\\Users\\oaona\\app_batch_correction\\www\\to_be_corrected\\*.*"))})
-  if (file.exists("C:\\Users\\oaona\\app_batch_correction\\www\\to_be_corrected\\Batch_1_anchorstim.fcs"))
-  {jj<- "C:\\Users\\oaona\\app_batch_correction\\www\\to_be_corrected\\Batch_1_anchorstim.fcs"
+  if (file.exists("to_be_corrected\\Batch_1_anchorstim.fcs"))
+  {jj<- "to_be_corrected\\Batch_1_anchorstim.fcs"
   hjk<- flowCore::read.FCS(jj)
   for (i in attributes(colnames(flowCore::exprs(hjk))))
   {jk<- paste(substr(i,1,nchar(i)-1), "S", sep="")}
@@ -274,15 +360,15 @@ server<- function(input, output, session)
       }
         
         updatePickerInput(session, inputId = "variable", choices= choice)}
-  #renderPrint(paste(input$variable, "b", sep=""))
+  renderPrint(paste(input$variable, "b", sep=""))
   
   })
   observeEvent(input$action, {print(as.numeric(input$variable))})
   
   
-  observeEvent(input$action, {files <- list.files(path="C:\\Users\\oaona\\app_batch_correction\\www\\to_be_corrected\\", pattern="*.fcs", full.names=TRUE, recursive=FALSE)
+  observeEvent(input$action, {files <- list.files(path="to_be_corrected\\", pattern="*.fcs", full.names=TRUE, recursive=FALSE)
   
-  hjk<- "C:\\Users\\oaona\\app_batch_correction\\www\\to_be_corrected\\Batch_1_anchorstim.fcs"
+  hjk<- "to_be_corrected\\Batch_1_anchorstim.fcs"
   #hjk<- flowCore::read.FCS(jj)
   #rom <- list.files(path = "C:/Users/oaona/app_batch_correction/www/csv_untransformed/", pattern= "*.fcs", full.names = TRUE)
   hjk<- flowCore::read.FCS(hjk)
@@ -297,7 +383,7 @@ for (i in jk)
     choice2<- append(choice2, jkl)}
 jjk1<- choice2[as.numeric(input$variable)]
 
-print(jjk1)
+#print(jjk1)
    for (file in files)  
    { jjk<- flowCore::exprs(flowCore::read.FCS(file))[ ,as.numeric(input$variable)]
     colnames(jjk)<- jjk1
@@ -313,9 +399,9 @@ print(jjk1)
 
     
 
-  flowCore::write.FCS(ff, paste("C:\\Users\\oaona\\app_batch_correction\\www\\fcs_untransformed\\", sub(pattern = "(.*)\\..*$", replacement = "\\1", basename(file)), ".fcs", sep= ""))
+  flowCore::write.FCS(ff, paste("fcs_untransformed\\", sub(pattern = "(.*)\\..*$", replacement = "\\1", basename(file)), ".fcs", sep= ""))
   }
-print(colnames(jjk))
+#print(colnames(jjk))
 
   })
 
