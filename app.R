@@ -146,6 +146,17 @@ column(2,
     buttonLabel = "Browse",
     placeholder = "batch_1"
   ),
+
+    fileInput(
+    inputId="file90A",
+    label= NULL,
+    multiple = TRUE,
+    accept = ".FCS",
+    width = '200px',
+    buttonLabel = "Browse",
+    placeholder = "batch_1_2"
+  ),
+
     fileInput(
     inputId="file91",
     label= NULL,
@@ -154,6 +165,17 @@ column(2,
     width = '200px',
     buttonLabel = "Browse",
     placeholder = "batch_2"
+  ),
+
+
+    fileInput(
+    inputId="file91A",
+    label= NULL,
+    multiple = TRUE,
+    accept = ".FCS",
+    width = '200px',
+    buttonLabel = "Browse",
+    placeholder = "batch_2_2"
   ),
 
   fileInput(
@@ -166,6 +188,18 @@ column(2,
     placeholder = "batch_3"
   ),
 
+
+  fileInput(
+    inputId="file92A",
+    label= NULL,
+    multiple = TRUE,
+    accept = ".FCS",
+    width = '200px',
+    buttonLabel = "Browse",
+    placeholder = "batch_3_2"
+  ),
+
+
   fileInput(
     inputId="file93",
     label= NULL,
@@ -176,6 +210,17 @@ column(2,
     placeholder = "batch_4"
   ),
   fileInput(
+    inputId="file93A",
+    label= NULL,
+    multiple = TRUE,
+    accept = ".FCS",
+    width = '200px',
+    buttonLabel = "Browse",
+    placeholder = "batch_4_2"
+  ),
+
+
+  fileInput(
     inputId="file94",
     label= NULL,
     multiple = TRUE,
@@ -185,6 +230,18 @@ column(2,
     placeholder = "batch_5"
   ),
 
+
+fileInput(
+    inputId="file94A",
+    label= NULL,
+    multiple = TRUE,
+    accept = ".FCS",
+    width = '200px',
+    buttonLabel = "Browse",
+    placeholder = "batch_5_2"
+  ),
+
+
   fileInput(
     inputId="file95",
     label= NULL,
@@ -193,7 +250,18 @@ column(2,
     width = '200px',
     buttonLabel = "Browse",
     placeholder = "batch_6"
+  ),
+
+  fileInput(
+    inputId="file95A",
+    label= NULL,
+    multiple = TRUE,
+    accept = ".FCS",
+    width = '200px',
+    buttonLabel = "Browse",
+    placeholder = "batch_6_2"
   )
+
 
 
 
@@ -235,16 +303,22 @@ fluidRow
 sliderInput("integer1", "Percentile:",
                   min = 1, max = 100,
                   value = 5),
+pickerInput("variable7", label= "channelstoAdjust", choices=c(),  options = list(`actions-box` = TRUE), multiple = TRUE),
 
- pickerInput("integer2", label= "parameters" ,choices=c("SD", "mean", "median"),  options = list(`actions-box` = TRUE), multiple = TRUE),
+ pickerInput("integer2", label= "parameters" ,choices=c("SD", "mean", "median"),  options = list(`actions-box` = TRUE), multiple = FALSE),
 
- actionButton("action6", "Batch_Adjust")
+ actionButton("action6", "Batch_Adjust"),
+
+ actionButton("action15", "confirm_Adjust")
+ 
      
 
   ),
 
 
-mainPanel(textOutput("checking"))
+mainPanel(
+  tableOutput("cdk1"),
+        )
 
 
 
@@ -295,36 +369,124 @@ tags$script(HTML(
 
 
 server<- function(input, output, session)
-{output$checking<- renderText({input$integer2})
+{
 
-   options(shiny.maxRequestSize=100*1024^2)
+
+
+   options(shiny.maxRequestSize=200*1024^2)
   observe({
   file11 <- input$file1
-  print(file11$datapath)
+  #print(file11$datapath)
   file.copy(file11$datapath, "to_be_corrected\\Batch_1_anchorstim.fcs", overwrite = TRUE)
+
+
+ file900 <- input$file90
+ #print(str(input$file90))
+ #print(length(input$file90$name))
+ #print(input$file90$datapath)
+  
+  for ( ii in c(1:length(file900$name)))
+       {file.copy(file900$datapath[ii], paste0("to_be_corrected\\Batch_1_1", ii, "nonanchor1.fcs"), overwrite = TRUE)}
+ 
+ file900A <- input$file90A
+  for ( ii in c(1:length(file900A$name)))
+  {file.copy(file900A$datapath[ii], paste0("to_be_corrected\\Batch_1_2", ii, "nonanchor1.fcs"), overwrite = TRUE)}
+  
+
+
   file22 <- input$file2
-  print(file22$datapath)
   file.copy(file22$datapath, "to_be_corrected\\Batch_2_anchorstim.fcs", overwrite = TRUE)
+
+
+file910 <- input$file91
+  for ( ii in c(1:length(file910$name)))
+  {#file_number<- file_number+1
+   file.copy(file910$datapath[ii], paste0("to_be_corrected\\Batch_2_1", ii, "nonanchor1.fcs"), overwrite = TRUE)
+
+  }
+
+file910A <- input$file91A
+ for ( ii in c(1:length(file900$name)))
+  
+  {file.copy(file910A$datapath[ii], paste0("to_be_corrected\\Batch_2_2", ii, "nonanchor1.fcs"), overwrite = TRUE)}
+
+
+
+  
+
+
   file33 <- input$file3
   print(file33$datapath)
   file.copy(file33$datapath, "to_be_corrected\\Batch_3_anchorstim.fcs", overwrite = TRUE)
+
+file920 <- input$file92
+  #print(file920$datapath)
+  file.copy(file920$datapath, "to_be_corrected\\Batch_3_1nonanchor1.fcs", overwrite = TRUE)
+
+file920A <- input$file92A
+  #print(file920$datapath)
+  file.copy(file920A$datapath, "to_be_corrected\\Batch_3_2nonanchor1.fcs", overwrite = TRUE)
+
+  
+
   file44 <- input$file4
   print(file44$datapath)
   file.copy(file44$datapath, "to_be_corrected\\Batch_4_anchorstim.fcs", overwrite = TRUE)
+  
+file930 <- input$file93
+  #print(file44$datapath)
+  file.copy(file930$datapath, "to_be_corrected\\Batch_4_1nonanchor1.fcs", overwrite = TRUE)
+  
+file930A <- input$file93A
+  #print(file44$datapath)
+  file.copy(file930A$datapath, "to_be_corrected\\Batch_4_2nonanchor1.fcs", overwrite = TRUE)
+  
+
+
+
+
   file55 <- input$file5
   print(file55$datapath)
   file.copy(file55$datapath, "to_be_corrected\\Batch_5_anchorstim.fcs", overwrite = TRUE)
+  
+file940 <- input$file94
+  #print(file55$datapath)
+  file.copy(file940$datapath, "to_be_corrected\\Batch_5_1nonanchor1.fcs", overwrite = TRUE)
+  
+file940A <- input$file94A
+  #print(file55$datapath)
+  file.copy(file940A$datapath, "to_be_corrected\\Batch_5_2nonanchor1.fcs", overwrite = TRUE)
+  
+
+
+
+
   file66 <- input$file6
   print(file66$datapath)
   file.copy(file66$datapath, "to_be_corrected\\Batch_6_anchorstim.fcs", overwrite = TRUE)
   
-  onSessionEnded(function() {do.call(file.remove, list(list.files("C:\\Users\\oaona\\app_batch_correction\\www\\to_be_corrected\\", full.names = TRUE)))})
-  onSessionEnded(function() {do.call(file.remove, list(list.files("C:\\Users\\oaona\\app_batch_correction\\www\\fcs_untransformed\\", full.names = TRUE)))})
-  onSessionEnded(function() {do.call(file.remove, list(list.files("C:\\Users\\oaona\\app_batch_correction\\www\\concat\\", full.names = TRUE)))})
+file950 <- input$file95
+  #print(file950$datapath)
+  file.copy(file950$datapath, "to_be_corrected\\Batch_6_1nonanchor1.fcs", overwrite = TRUE)
   
 
 
-  choicelist2<- append(c("SD", "mean", "median"), input$integer1)
+file950A <- input$file95A
+  #print(file950$datapath)
+  file.copy(file950A$datapath, "to_be_corrected\\Batch_6_2nonanchor1.fcs", overwrite = TRUE)
+  
+
+
+  onSessionEnded(function() {do.call(file.remove, list(list.files("to_be_corrected\\", full.names = TRUE)))})
+  onSessionEnded(function() {do.call(file.remove, list(list.files("fcs_untransformed\\", full.names = TRUE)))})
+  onSessionEnded(function() {do.call(file.remove, list(list.files("C:\\Users\\oaona\\app_batch_correction\\www\\concat\\", full.names = TRUE)))})
+  onSessionEnded(function() {file.remove("channelstoadjust.txt")})
+  onSessionEnded(function() {do.call(file.remove, list(list.files("fcs_aligned\\", full.names = TRUE)))})
+  onSessionEnded(function() {do.call(file.remove, unlink("fcs_aligned\\DistributionPlots", recursive = TRUE))})
+  
+
+
+  choicelist2<- append(c("SD", "median"), paste(input$integer1, "p", sep=""))
 
   updatePickerInput(session, inputId = "integer2", choices= choicelist2)
 
@@ -360,11 +522,629 @@ server<- function(input, output, session)
       }
         
         updatePickerInput(session, inputId = "variable", choices= choice)}
-  renderPrint(paste(input$variable, "b", sep=""))
-  
   })
-  observeEvent(input$action, {print(as.numeric(input$variable))})
   
+observe({
+
+if (file.exists("fcs_untransformed\\Batch_1_anchorstim.fcs"))
+   {
+    jm<- "fcs_untransformed\\Batch_1_anchorstim.fcs"
+
+    hjk<- flowCore::read.FCS(jm)
+  for (i in attributes(colnames(flowCore::exprs(hjk))))
+  {jk<- paste(substr(i,1,nchar(i)-1), "S", sep="")}
+  choice<- c()
+  for (i in jk)
+  {jkl<- flowCore::description(hjk)[[i]]
+  choice<- append(choice, jkl)}
+  choicelist2<- c()
+  j<- 0
+  for (i in choice)
+  {j=j+1
+  choicelist2[[i]]<- j
+  }
+  updatePickerInput(session, inputId = "variable7", choices= choicelist2)
+ }
+
+
+else
+{choice<- c()
+      cc<- c("all", "ball")
+      for (i in cc)
+      {choice[[i]]<- 2
+      }
+        
+updatePickerInput(session, inputId = "variable7", choices= choice)}
+
+
+
+
+
+  })
+
+
+
+
+  observeEvent(input$action, {print(as.numeric(input$variable))})
+
+
+
+
+
+  observeEvent(input$action6, {
+#if (file.exists())
+if(    length(list.files("fcs_untransformed\\"))!=0)
+
+   { file_list<- list.files("fcs_untransformed\\")
+   file_list2<- stringr::str_subset(file_list, "Batch_")
+   #for (iii in file_list2)
+
+
+    #  {file.copy(iii, paste("fcs_untransformed\\", basename(iii)), overwrite = TRUE)
+    #}
+do.call(file.remove, list(list.files("fcs_aligned\\", full.names = TRUE)))
+#do.call(file.remove, unlink("fcs_aligned\\DistributionPlots", recursive = TRUE))})
+ unlink("fcs_aligned\\DistributionPlots", recursive = TRUE)
+
+  #file.remove("fcs_aligned")
+
+
+
+   }
+
+    #files <- list.files(path="to_be_corrected\\", pattern="*.fcs", full.names=TRUE, recursive=FALSE)
+  
+  hjk<- "fcs_untransformed\\Batch_1_anchorstim.fcs"
+  #hjk<- flowCore::read.FCS(jj)
+  #rom <- list.files(path = "C:/Users/oaona/app_batch_correction/www/csv_untransformed/", pattern= "*.fcs", full.names = TRUE)
+  hjk<- flowCore::read.FCS(hjk)
+for (i in attributes(colnames(flowCore::exprs(hjk))))
+    {jk<- paste(substr(i,1,nchar(i)-1), "S", sep="")
+    
+}
+
+choice2<- c()
+for (i in jk)
+    {jkl<- flowCore::description(hjk)[[i]]
+    choice2<- append(choice2, jkl)}
+jjk1<- choice2[as.numeric(input$variable7)]
+
+
+     sink("channelstoadjust.txt")
+     for (channel in jjk1)
+        {cat(channel)
+          cat("\n")}
+     sink()
+
+source("BatchAdjust.R")
+BatchAdjust(
+  basedir= "fcs_untransformed\\",
+  outdir=  "fcs_aligned\\",
+  channelsFile = "channelstoadjust.txt",
+  batchKeyword="Batch_",
+  anchorKeyword = "anchorstim",
+  method=input$integer2,
+  transformation=FALSE,
+  addExt=NULL,
+  plotDiagnostics=TRUE)
+
+
+my_txt <- readLines("channelstoadjust.txt")
+df1<- rep(my_txt, each=2)
+
+print(df1)
+
+df2<- rep(c("source", "validation"), times= length(my_txt))
+
+print(df2)
+
+rom22<- list.files(path = "fcs_untransformed/", pattern= "*.fcs", full.names = TRUE)
+where_the_pattern_is<- stringr::str_which(rom22, "anchorstim")
+rom_source<- rom22[where_the_pattern_is]
+BB1<- flowCore::read.FCS(rom_source[1])
+BB2<- flowCore::read.FCS(rom_source[2])
+newBBT1<- flowCore::exprs(BB1)
+newBBT2<- flowCore::exprs(BB2)
+newTT1<- newBBT1[sample(nrow(newBBT1), 2000), ]
+newTT2<- newBBT2[sample(nrow(newBBT2), 2000), ]
+newTT1<- as.data.frame(newTT1)
+newTT2<- as.data.frame(newTT2)
+
+
+
+
+where_the_pattern_iss<- stringr::str_which(rom22, "nonanchor")
+rom_validation<- rom22[where_the_pattern_iss]
+BB3<- flowCore::read.FCS(rom_validation[1])
+BB4<- flowCore::read.FCS(rom_validation[2])
+newBBT3<- flowCore::exprs(BB3)
+newBBT4<- flowCore::exprs(BB4)
+newTT3<- newBBT3[sample(nrow(newBBT3), 2000), ]
+newTT4<- newBBT4[sample(nrow(newBBT4), 2000), ]
+
+newTT3<- as.data.frame(newTT3)
+newTT4<- as.data.frame(newTT4)
+
+
+
+
+df3<- c() 
+for (parameters in my_txt)
+      {AAA1<- newTT1[[parameters]]
+      AAA2<- newTT2[[parameters]]
+      AAA3<- newTT3[[parameters]]
+      AAA4<- newTT4[[parameters]]
+      temporal<- c()
+      suppressWarnings(e_source<- dgof::ks.test(AAA1, AAA2))
+      attributes(e_source$statistic)<- NULL
+      suppressWarnings(e_validation<- dgof::ks.test(AAA3, AAA4))
+      attributes(e_validation$statistic)<- NULL
+      temporal<- append(temporal, e_source$statistic)
+      temporal<- append(temporal, e_validation$statistic)
+
+      df3<- append(df3, temporal)
+      
+      }
+
+print(df3)
+
+
+rom22<- list.files(path = "fcs_aligned/", pattern= "*.fcs", full.names = TRUE)
+where_the_pattern_is<- stringr::str_which(rom22, "anchorstim")
+rom_source<- rom22[where_the_pattern_is]
+BB1<- flowCore::read.FCS(rom_source[1])
+BB2<- flowCore::read.FCS(rom_source[2])
+newBBT1<- flowCore::exprs(BB1)
+newBBT2<- flowCore::exprs(BB2)
+newTT1<- newBBT1[sample(nrow(newBBT1), 2000), ]
+newTT2<- newBBT2[sample(nrow(newBBT2), 2000), ]
+
+
+
+newTT1<- as.data.frame(newTT1)
+newTT2<- as.data.frame(newTT2)
+
+
+where_the_pattern_iss<- stringr::str_which(rom22, "nonanchor")
+rom_validation<- rom22[where_the_pattern_iss]
+BB3<- flowCore::read.FCS(rom_validation[1])
+BB4<- flowCore::read.FCS(rom_validation[2])
+newBBT3<- flowCore::exprs(BB3)
+newBBT4<- flowCore::exprs(BB4)
+newTT3<- newBBT3[sample(nrow(newBBT3), 2000), ]
+newTT4<- newBBT4[sample(nrow(newBBT4), 2000), ]
+
+
+newTT3<- as.data.frame(newTT3)
+newTT4<- as.data.frame(newTT4)
+
+
+df4<- c() 
+for (parameters in my_txt)
+      {AAA1<- newTT1[[parameters]]
+      AAA2<- newTT2[[parameters]]
+      AAA3<- newTT3[[parameters]]
+      AAA4<- newTT4[[parameters]]
+      temporal<- c()
+      suppressWarnings(e_source<- dgof::ks.test(AAA1, AAA2))
+      attributes(e_source$statistic)<- NULL
+      suppressWarnings(e_validation<- dgof::ks.test(AAA3, AAA4))
+      attributes(e_validation$statistic)<- NULL
+      temporal<- append(temporal, e_source$statistic)
+      temporal<- append(temporal, e_validation$statistic)
+
+      df4<- append(df4, temporal)
+      
+      }
+   show_table<- c()
+
+  show_table<- rbind(show_table, df1)
+  show_table<- rbind(show_table, df2)
+  show_table<- rbind(show_table, df3)
+  show_table<- rbind(show_table, df4)
+display_table<- show_table
+
+
+output$cdk1 <- renderTable({display_table})
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+file_list<- list.files("fcs_untransformed\\")
+
+
+
+   rom <- list.files(path = "fcs_untransformed/", pattern= "*.fcs", full.names = TRUE)
+   length<- c()
+   for (xyz in rom)
+    {yz<- flowCore::read.FCS(xyz)
+    kkk<- dim(flowCore::exprs(yz))[1]
+    length<- append(length, kkk)}
+  kkj<- dim(flowCore::exprs(yz))[2]
+  pp<- cumsum(length)
+ qq<- pp
+ qq<- R.utils::insert(qq, 1, 1)
+ qq[1]<- 0
+
+
+  concatBBT<-c()
+  for (jj in rom)
+    {BB<- flowCore::read.FCS(jj)
+     newBBT<- flowCore::exprs(BB)[ ,c(1:kkj)]
+    
+    concatBBT<- rbind(concatBBT, newBBT)}
+
+
+number_of_markers<- dim(concatBBT)[2]
+num_of_fcs<- length(qq)-1
+kkk<- c()
+for (i in c(1:(num_of_fcs-1)))
+    {jjj<- c()
+     j= c((i+1):num_of_fcs)
+     for (q in j)
+         {assign(paste("S",i, q, sep=""), c())
+         jjj<- append(jjj, paste("S",i, q, sep=""))}
+kkk<- append(kkk, jjj)}
+
+distance<- c()
+for (i in c(1:(num_of_fcs-1)))
+    {j= c((i+1):num_of_fcs)
+     for (q in j)
+         {for (w in c(1:number_of_markers))
+                       {   bbc<- qq[i]+1
+                           cnn<- qq[i+1]
+                           nta<- qq[q]+1
+                           fox<- qq[q+1]
+         
+                       rommX=concatBBT[c(bbc: cnn), ]
+                       rommY= concatBBT[c(nta: fox), ]
+                      suppressWarnings(e<- dgof::ks.test(rommX[sample(nrow(rommX), 5000), ][ ,w],
+                    rommY[sample(nrow(rommY), 5000), ][ ,w]))
+                      attributes(e$statistic)<- NULL
+                                assign(paste("S",i, q, sep=""), append(get(paste("S",i, q, sep="")), e$statistic))
+        
+         
+     }
+          distance<- cbind(distance, get(paste("S",i, q, sep="")))
+     
+          }
+          }
+
+
+
+
+    })
+  
+
+
+
+
+
+
+
+
+
+
+
+observeEvent(input$action15, {
+#if (file.exists())
+if(    length(list.files("fcs_untransformed\\"))!=0)
+
+   { file_list<- list.files("fcs_untransformed\\")
+   file_list2<- stringr::str_subset(file_list, "Batch_")
+   #for (iii in file_list2)
+
+
+    #  {file.copy(iii, paste("fcs_untransformed\\", basename(iii)), overwrite = TRUE)
+    #}
+do.call(file.remove, list(list.files("fcs_aligned\\", full.names = TRUE)))
+#do.call(file.remove, unlink("fcs_aligned\\DistributionPlots", recursive = TRUE))})
+ unlink("fcs_aligned\\DistributionPlots", recursive = TRUE)
+
+  #file.remove("fcs_aligned")
+
+
+
+   }
+
+    #files <- list.files(path="to_be_corrected\\", pattern="*.fcs", full.names=TRUE, recursive=FALSE)
+  
+  hjk<- "fcs_untransformed\\Batch_1_anchorstim.fcs"
+  #hjk<- flowCore::read.FCS(jj)
+  #rom <- list.files(path = "C:/Users/oaona/app_batch_correction/www/csv_untransformed/", pattern= "*.fcs", full.names = TRUE)
+  hjk<- flowCore::read.FCS(hjk)
+for (i in attributes(colnames(flowCore::exprs(hjk))))
+    {jk<- paste(substr(i,1,nchar(i)-1), "S", sep="")
+    
+}
+
+choice2<- c()
+for (i in jk)
+    {jkl<- flowCore::description(hjk)[[i]]
+    choice2<- append(choice2, jkl)}
+jjk1<- choice2[as.numeric(input$variable7)]
+
+
+     sink("channelstoadjust.txt")
+     for (channel in jjk1)
+        {cat(channel)
+          cat("\n")}
+     sink()
+
+source("BatchAdjust.R")
+BatchAdjust(
+  basedir= "fcs_untransformed\\",
+  outdir=  "fcs_aligned\\",
+  channelsFile = "channelstoadjust.txt",
+  batchKeyword="Batch_",
+  anchorKeyword = "anchorstim",
+  method=input$integer2,
+  transformation=FALSE,
+  addExt=NULL,
+  plotDiagnostics=TRUE)
+
+
+my_txt <- readLines("channelstoadjust.txt")
+df1<- rep(my_txt, each=2)
+
+print(df1)
+
+df2<- rep(c("source", "validation"), times= length(my_txt))
+
+print(df2)
+
+rom22<- list.files(path = "fcs_untransformed/", pattern= "*.fcs", full.names = TRUE)
+where_the_pattern_is<- stringr::str_which(rom22, "anchorstim")
+rom_source<- rom22[where_the_pattern_is]
+BB1<- flowCore::read.FCS(rom_source[1])
+BB2<- flowCore::read.FCS(rom_source[2])
+newBBT1<- flowCore::exprs(BB1)
+newBBT2<- flowCore::exprs(BB2)
+newTT1<- newBBT1[sample(nrow(newBBT1), 2000), ]
+newTT2<- newBBT2[sample(nrow(newBBT2), 2000), ]
+newTT1<- as.data.frame(newTT1)
+newTT2<- as.data.frame(newTT2)
+
+
+
+
+where_the_pattern_iss<- stringr::str_which(rom22, "nonanchor")
+rom_validation<- rom22[where_the_pattern_iss]
+BB3<- flowCore::read.FCS(rom_validation[1])
+BB4<- flowCore::read.FCS(rom_validation[2])
+newBBT3<- flowCore::exprs(BB3)
+newBBT4<- flowCore::exprs(BB4)
+newTT3<- newBBT3[sample(nrow(newBBT3), 2000), ]
+newTT4<- newBBT4[sample(nrow(newBBT4), 2000), ]
+
+newTT3<- as.data.frame(newTT3)
+newTT4<- as.data.frame(newTT4)
+
+
+
+
+df3<- c() 
+for (parameters in my_txt)
+      {AAA1<- newTT1[[parameters]]
+      AAA2<- newTT2[[parameters]]
+      AAA3<- newTT3[[parameters]]
+      AAA4<- newTT4[[parameters]]
+      temporal<- c()
+      suppressWarnings(e_source<- dgof::ks.test(AAA1, AAA2))
+      attributes(e_source$statistic)<- NULL
+      suppressWarnings(e_validation<- dgof::ks.test(AAA3, AAA4))
+      attributes(e_validation$statistic)<- NULL
+      temporal<- append(temporal, e_source$statistic)
+      temporal<- append(temporal, e_validation$statistic)
+
+      df3<- append(df3, temporal)
+      
+      }
+
+print(df3)
+
+
+rom22<- list.files(path = "fcs_aligned/", pattern= "*.fcs", full.names = TRUE)
+where_the_pattern_is<- stringr::str_which(rom22, "anchorstim")
+rom_source<- rom22[where_the_pattern_is]
+BB1<- flowCore::read.FCS(rom_source[1])
+BB2<- flowCore::read.FCS(rom_source[2])
+newBBT1<- flowCore::exprs(BB1)
+newBBT2<- flowCore::exprs(BB2)
+newTT1<- newBBT1[sample(nrow(newBBT1), 2000), ]
+newTT2<- newBBT2[sample(nrow(newBBT2), 2000), ]
+
+
+
+newTT1<- as.data.frame(newTT1)
+newTT2<- as.data.frame(newTT2)
+
+
+where_the_pattern_iss<- stringr::str_which(rom22, "nonanchor")
+rom_validation<- rom22[where_the_pattern_iss]
+BB3<- flowCore::read.FCS(rom_validation[1])
+BB4<- flowCore::read.FCS(rom_validation[2])
+newBBT3<- flowCore::exprs(BB3)
+newBBT4<- flowCore::exprs(BB4)
+newTT3<- newBBT3[sample(nrow(newBBT3), 2000), ]
+newTT4<- newBBT4[sample(nrow(newBBT4), 2000), ]
+
+
+newTT3<- as.data.frame(newTT3)
+newTT4<- as.data.frame(newTT4)
+
+
+df4<- c() 
+for (parameters in my_txt)
+      {AAA1<- newTT1[[parameters]]
+      AAA2<- newTT2[[parameters]]
+      AAA3<- newTT3[[parameters]]
+      AAA4<- newTT4[[parameters]]
+      temporal<- c()
+      suppressWarnings(e_source<- dgof::ks.test(AAA1, AAA2))
+      attributes(e_source$statistic)<- NULL
+      suppressWarnings(e_validation<- dgof::ks.test(AAA3, AAA4))
+      attributes(e_validation$statistic)<- NULL
+      temporal<- append(temporal, e_source$statistic)
+      temporal<- append(temporal, e_validation$statistic)
+
+      df4<- append(df4, temporal)
+      
+      }
+   show_table<- c()
+
+  show_table<- rbind(show_table, df1)
+  show_table<- rbind(show_table, df2)
+  show_table<- rbind(show_table, df3)
+  show_table<- rbind(show_table, df4)
+display_table<- show_table
+
+
+output$cdk1 <- renderTable({display_table})
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+file_list<- list.files("fcs_untransformed\\")
+
+
+
+   rom <- list.files(path = "fcs_untransformed/", pattern= "*.fcs", full.names = TRUE)
+   length<- c()
+   for (xyz in rom)
+    {yz<- flowCore::read.FCS(xyz)
+    kkk<- dim(flowCore::exprs(yz))[1]
+    length<- append(length, kkk)}
+  kkj<- dim(flowCore::exprs(yz))[2]
+  pp<- cumsum(length)
+ qq<- pp
+ qq<- R.utils::insert(qq, 1, 1)
+ qq[1]<- 0
+
+
+  concatBBT<-c()
+  for (jj in rom)
+    {BB<- flowCore::read.FCS(jj)
+     newBBT<- flowCore::exprs(BB)[ ,c(1:kkj)]
+    
+    concatBBT<- rbind(concatBBT, newBBT)}
+
+
+number_of_markers<- dim(concatBBT)[2]
+num_of_fcs<- length(qq)-1
+kkk<- c()
+for (i in c(1:(num_of_fcs-1)))
+    {jjj<- c()
+     j= c((i+1):num_of_fcs)
+     for (q in j)
+         {assign(paste("S",i, q, sep=""), c())
+         jjj<- append(jjj, paste("S",i, q, sep=""))}
+kkk<- append(kkk, jjj)}
+
+distance<- c()
+for (i in c(1:(num_of_fcs-1)))
+    {j= c((i+1):num_of_fcs)
+     for (q in j)
+         {for (w in c(1:number_of_markers))
+                       {   bbc<- qq[i]+1
+                           cnn<- qq[i+1]
+                           nta<- qq[q]+1
+                           fox<- qq[q+1]
+         
+                       rommX=concatBBT[c(bbc: cnn), ]
+                       rommY= concatBBT[c(nta: fox), ]
+                      suppressWarnings(e<- dgof::ks.test(rommX[sample(nrow(rommX), 5000), ][ ,w],
+                    rommY[sample(nrow(rommY), 5000), ][ ,w]))
+                      attributes(e$statistic)<- NULL
+                                assign(paste("S",i, q, sep=""), append(get(paste("S",i, q, sep="")), e$statistic))
+        
+         
+     }
+          distance<- cbind(distance, get(paste("S",i, q, sep="")))
+     
+          }
+          }
+
+file_list<- list.files("fcs_aligned\\")
+file_list2<- stringr::str_subset(file_list, "Batch_")
+
+#file_list2<- stringr::str_remove(file_list2, "new")
+#setwd("fcs_aligned")
+#file.rename(list.files("fcs_aligned\\", pattern = "\\.fcs$"),file_list2)
+#file.rename(list.files("fcs_aligned\\"), file_list2)
+#setwd("app_batch_correction")
+for (iii in file_list2)
+
+
+    {file.copy(paste("fcs_aligned\\",iii, sep=""), paste("fcs_untransformed\\", basename(iii), sep=""), overwrite = TRUE)
+    }
+do.call(file.remove, list(list.files("fcs_aligned\\", full.names = TRUE)))
+#do.call(file.remove, unlink("fcs_aligned\\DistributionPlots", recursive = TRUE))})
+ unlink("fcs_aligned\\DistributionPlots", recursive = TRUE)
+
+  #file.remove("fcs_aligned")
+
+
+
+
+
+
+
+
+
+
+
+
+    })
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   
   observeEvent(input$action, {files <- list.files(path="to_be_corrected\\", pattern="*.fcs", full.names=TRUE, recursive=FALSE)
   
@@ -389,7 +1169,7 @@ jjk1<- choice2[as.numeric(input$variable)]
     colnames(jjk)<- jjk1
    
   #meta <- data.frame(name=choice2, desc=paste('this is column',choice2,'from your CSV'))
-   meta <- data.frame(name=colnames(jjk), desc=paste('this is column',colnames(jjk),'from your CSV'))
+   meta <- data.frame(name=colnames(jjk), desc=colnames(jjk))
  
   meta$range <- apply(apply(jjk,2,range),2,diff)
   meta$minRange <- apply(jjk,2,min)
@@ -403,12 +1183,41 @@ jjk1<- choice2[as.numeric(input$variable)]
   }
 #print(colnames(jjk))
 
+#session$reload()
+      #return()
+
+
+
+  jm<- "fcs_untransformed\\Batch_1_anchorstim.fcs"
+
+    hjk<- flowCore::read.FCS(jm)
+  for (i in attributes(colnames(flowCore::exprs(hjk))))
+  {jk<- paste(substr(i,1,nchar(i)-1), "S", sep="")}
+  choice<- c()
+  for (i in jk)
+  {jkl<- flowCore::description(hjk)[[i]]
+  choice<- append(choice, jkl)}
+  choicelist2<- c()
+  j<- 0
+  for (i in choice)
+  {j=j+1
+  choicelist2[[i]]<- j
+  }
+  updatePickerInput(session, inputId = "variable7", choices= choicelist2)
+
+
+
   })
 
 
-observeEvent(input$action4, {files <- list.files(path="C:\\Users\\oaona\\app_batch_correction\\www\\to_be_corrected\\", pattern="*.fcs", full.names=TRUE, recursive=FALSE)
+ 
+
+
+
+
+observeEvent(input$action4, {files <- list.files(path="to_be_corrected\\", pattern="*.fcs", full.names=TRUE, recursive=FALSE)
   
-  hjk<- "C:\\Users\\oaona\\app_batch_correction\\www\\to_be_corrected\\Batch_1_anchorstim.fcs"
+  hjk<- "to_be_corrected\\Batch_1_anchorstim.fcs"
   #hjk<- flowCore::read.FCS(jj)
   #rom <- list.files(path = "C:/Users/oaona/app_batch_correction/www/csv_untransformed/", pattern= "*.fcs", full.names = TRUE)
   hjk<- flowCore::read.FCS(hjk)
@@ -423,16 +1232,16 @@ for (i in jk)
     choice2<- append(choice2, jkl)}
 jjk1<- choice2[as.numeric(input$variable)]
 
-print(jjk1)
+#print(jjk1)
    for (file in files)  
    { BB<- flowCore::read.FCS(file)
-    translist<- flowCore::transformList(colnames(BB), CytoNorm::cytofTransform)
+    translist<- flowCore::transformList(colnames(flowCore::exprs(BB)), CytoNorm::cytofTransform)
     BB <- flowCore::transform(BB, translist)
     jjk<- flowCore::exprs(BB)[ ,as.numeric(input$variable)]
     colnames(jjk)<- jjk1
    
   #meta <- data.frame(name=choice2, desc=paste('this is column',choice2,'from your CSV'))
-   meta <- data.frame(name=colnames(jjk), desc=paste('this is column',colnames(jjk),'from your CSV'))
+   meta <- data.frame(name=colnames(jjk), desc=colnames(jjk))
  
   meta$range <- apply(apply(jjk,2,range),2,diff)
   meta$minRange <- apply(jjk,2,min)
@@ -442,9 +1251,34 @@ print(jjk1)
 
     
 
-  flowCore::write.FCS(ff, paste("C:\\Users\\oaona\\app_batch_correction\\www\\fcs_untransformed\\", sub(pattern = "(.*)\\..*$", replacement = "\\1", basename(file)), ".fcs", sep= ""))
+  flowCore::write.FCS(ff, paste("fcs_untransformed\\", sub(pattern = "(.*)\\..*$", replacement = "\\1", basename(file)), ".fcs", sep= ""))
   }
-print(colnames(jjk))
+#session$reload()
+      #return()
+
+  #print(colnames(jjk))
+
+
+
+
+  jm<- "fcs_untransformed\\Batch_1_anchorstim.fcs"
+
+    hjk<- flowCore::read.FCS(jm)
+  for (i in attributes(colnames(flowCore::exprs(hjk))))
+  {jk<- paste(substr(i,1,nchar(i)-1), "S", sep="")}
+  choice<- c()
+  for (i in jk)
+  {jkl<- flowCore::description(hjk)[[i]]
+  choice<- append(choice, jkl)}
+  choicelist2<- c()
+  j<- 0
+  for (i in choice)
+  {j=j+1
+  choicelist2[[i]]<- j
+  }
+  updatePickerInput(session, inputId = "variable7", choices= choicelist2)
+
+
 
   })
 
@@ -454,7 +1288,7 @@ print(colnames(jjk))
   
   
   observeEvent(input$action2, {
-   rom <- list.files(path = "C:/Users/oaona/app_batch_correction/www/fcs_untransformed/", pattern= "*.fcs", full.names = TRUE)
+   rom <- list.files(path = "fcs_untransformed/", pattern= "*.fcs", full.names = TRUE)
    length<- c()
    for (xyz in rom)
     {yz<- flowCore::read.FCS(xyz)
@@ -582,7 +1416,7 @@ length<- c()
 
 
 meta <- data.frame(name=colnames(newBBT),
-   desc=paste('this is column',colnames(newBBT),'from your CSV'))
+   desc=colnames(newBBT))
 
 
 meta$range <- apply(apply(newBBT,2,range),2,diff)
