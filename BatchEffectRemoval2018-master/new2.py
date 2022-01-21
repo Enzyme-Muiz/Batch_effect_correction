@@ -1,0 +1,681 @@
+'''
+Created on Jul 6, 2018
+
+@author: urishaham
+The script is based on https://github.com/LynnHo/VAE-Tensorflow
+WGAN-gp code is based on on https://github.com/LynnHo/DCGAN-LSGAN-WGAN-WGAN-GP-Tensorflow/blob/master/models_mnist.py
+
+'''
+import numpy as np
+import argparse
+import datetime
+import json
+import shutil
+import traceback
+from functools import partial
+import os.path
+from sklearn import decomposition
+import tensorflow as tf
+import os
+
+import tflib as tl
+import utils1
+import pylib
+import scatterHist as sh
+
+from utils1 import preProcessCytofData as ps
+# ==============================================================================
+# =                                inputs arguments                            =
+# ==============================================================================
+
+# TODO: delete for public version
+if os.path.exists('./output'):
+    shutil.rmtree('./output')
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--use_test', dest='use_test', action='store_true', default=False,
+                    help="whether there are separate test data files")
+
+parser.add_argument('--batch_correct', dest='batch_correct', action='store_true', default=False,
+                    help="whether there are separate test data files")
+
+
+parser.add_argument('--n_epochs', dest='n_epochs', type=int, default=1000,
+                    help="number of training epochs")
+parser.add_argument('--batch_size', dest='batch_size', type=int, default=64,
+                    help="minibatch size")
+parser.add_argument('--decay_rate', dest='decay_rate', type=float, default=.1,
+                    help='learning rate decay rate')
+parser.add_argument('--decay_epochs', dest='decay_epochs', type=float, default=400,
+                    help='epochs till lr decay')
+parser.add_argument('--lr', dest='lr', type=float, default=1e-3,
+                    help='initial learning rate')
+parser.add_argument('--code_dim', dest='code_dim', type=int, default=15,
+                    help='dimension of code space')
+parser.add_argument('--beta', dest='beta', type=float, default=1.,
+                    help="KL coefficient for VAE")
+parser.add_argument('--gamma', dest='gamma', type=float, default=100,
+                    help="adversarial loss coefficient")
+parser.add_argument('--delta', dest='delta', type=float, default=.1,
+                    help="gp loss coefficient")
+parser.add_argument('--data_path', dest='data_path', default='./Data/multi_inst',
+                    help="path to data folder")
+
+parser.add_argument('--data_path_2', dest='data_path_2', default='./Data/multi_inst',
+                    help="path to data folder")
+
+
+parser.add_argument('--data_type', dest='data_type', default='cytof',
+                    help="type of data, cytof or other")
+parser.add_argument('--model', dest='model_name', default='mlp',
+                    help="model architecture, either mlp, resnet of transformer")
+parser.add_argument('--AE_type', dest='AE_type', default='VAE',
+                    help="type of AE, either VAE or standard")
+parser.add_argument('--experiment_name', dest='experiment_name',
+                    default=datetime.datetime.now().strftime("%I:%M%p on %B %d, %Y"))
+
+
+args = parser.parse_args()
+print(args)
+use_test = args.use_test
+
+batch_correct = args.batch_correct
+
+
+n_epochs = args.n_epochs
+batch_size = args.batch_size
+lr = args.lr
+decay_rate = args.decay_rate
+decay_epochs = args.decay_epochs
+code_dim = args.code_dim
+beta = args.beta
+gamma = args.gamma
+delta = args.delta
+data_path = args.data_path
+
+data_path_2 = args.data_path_2
+
+data_type = args.data_type
+model_name = args.model_name
+experiment_name = args.experiment_name
+AE_type = args.AE_type
+
+
+pylib.mkdir('./output/%s' % experiment_name)
+with open('./output/%s/setting.txt' % experiment_name, 'w') as f:
+    f.write(json.dumps(vars(args), indent=4, separators=(',', ':')))
+
+# ==============================================================================
+# =                            datasets and models                             =
+# ==============================================================================
+
+source_train_data, target_train_data, source1_train_data, source2_train_data,  source_test_data, target_test_data, source1_test_data, source2_test_data,  \
+    min_n, preprocessor = utils1.get_data(data_path, data_type, use_test)
+source_train_dataset = utils1.make_dataset(
+    source_train_data, batch_size=batch_size)
+source1_train_dataset = utils1.make_dataset(
+    source1_train_data, batch_size=batch_size)
+source2_train_dataset = utils1.make_dataset(
+    source2_train_data, batch_size=batch_size)
+
+target_train_dataset = utils1.make_dataset(
+    target_train_data, batch_size=batch_size)
+s_iterator = source_train_dataset.make_one_shot_iterator()
+s_next_element = s_iterator.get_next()
+
+s1_iterator = source1_train_dataset.make_one_shot_iterator()
+s1_next_element = s1_iterator.get_next()
+
+s2_iterator = source2_train_dataset.make_one_shot_iterator()
+s2_next_element = s2_iterator.get_next()
+
+
+t_iterator = target_train_dataset.make_one_shot_iterator()
+t_next_element = t_iterator.get_next()
+
+input_dim = source_train_data.shape[1]
+Enc, Dec_a, Dec_b, Dec_c, Dec_d, Disc = utils1.get_models(model_name)
+Enc = partial(Enc, code_dim=code_dim)
+Dec_a = partial(Dec_a, output_dim=input_dim)
+Dec_b = partial(Dec_b, output_dim=input_dim)
+Dec_c = partial(Dec_c, output_dim=input_dim)
+Dec_d = partial(Dec_d, output_dim=input_dim)
+
+
+list2 = []
+for jj in os.listdir(data_path_2):
+    path = os.path.join(data_path_2, jj)
+    list2.append(path)
+i = -1
+klm = []
+for k in list2:
+    i = i+1
+    s = "S"+os.listdir(data_path_2)[i]
+    ym = s.replace(" ", "")
+    ym = ym.replace(".csv", "")
+    klm.append(ym)
+    exec(ym + " = np.loadtxt(k, delimiter=',')")
+for jkl in klm:
+    exec(jkl + "= ps(eval(jkl))")
+
+
+# ==============================================================================
+# =                                    graph                                   =
+# ==============================================================================
+
+def enc_dec(input, AE_type, is_training=True):
+    # encode
+    if AE_type == "standard":
+        c, _ = Enc(input, is_training=is_training)
+    if AE_type == "VAE":
+        c_mu, c_log_sigma_sq = Enc(input, is_training=is_training)
+
+        # sample a code
+        epsilon = tf.random_normal(tf.shape(c_mu))
+        if is_training:
+            c = c_mu + tf.sqrt(tf.exp(c_log_sigma_sq)) * epsilon
+        else:
+            c = c_mu
+
+    # reconstruct code
+    rec_a = Dec_a(c, is_training=is_training)
+    rec_b = Dec_b(c, is_training=is_training)
+    rec_c = Dec_c(c, is_training=is_training)
+    rec_d = Dec_d(c, is_training=is_training)
+
+    if AE_type == "VAE":
+        return c_mu, c_log_sigma_sq, c, rec_a, rec_b, rec_c, rec_d
+    if AE_type == "standard":
+        return c, rec_a, rec_b, rec_c, rec_d
+
+
+# input
+input_a = tf.placeholder(tf.float32, [None, input_dim])
+input_b = tf.placeholder(tf.float32, [None, input_dim])
+input_c = tf.placeholder(tf.float32, [None, input_dim])
+input_d = tf.placeholder(tf.float32, [None, input_dim])
+
+
+# encode & decode
+if AE_type == "VAE":
+    c_mu_a, c_log_sigma_sq_a, c_a, rec_a, _, _, _ = enc_dec(input_a, AE_type)
+    c_mu_b, c_log_sigma_sq_b, c_b, _, rec_b, _, _ = enc_dec(input_b, AE_type)
+    c_mu_c, c_log_sigma_sq_c, c_c, _, _, rec_c, _ = enc_dec(input_c, AE_type)
+    c_mu_d, c_log_sigma_sq_d, c_d, _, _, _, rec_d = enc_dec(input_d, AE_type)
+
+    _, _, c_a1, rec_a1, _, _, _ = enc_dec(input_a, AE_type, is_training=False)
+    _, _, c_b1, _, rec_b1, _, _ = enc_dec(input_b, AE_type, is_training=False)
+    _, _, c_c1, _, _, rec_c1, _ = enc_dec(input_c, AE_type, is_training=False)
+    _, _, c_d1, _, _, _, rec_d1 = enc_dec(input_d, AE_type, is_training=False)
+
+
+else:
+    c_a, rec_a, _, _, _ = enc_dec(input_a, AE_type)
+    c_b, _, rec_b, _, _ = enc_dec(input_b, AE_type)
+    c_c, _, _, rec_c, _ = enc_dec(input_c, AE_type)
+    c_d, _, _, _, rec_d = enc_dec(input_d, AE_type)
+
+    c_a1, rec_a1, _, _, _ = enc_dec(input_a, AE_type, is_training=False)
+    c_b1, _, rec_b1, _, _ = enc_dec(input_b, AE_type, is_training=False)
+    c_c1, _, _, rec_c1, _ = enc_dec(input_c, AE_type, is_training=False)
+    c_d1, _, _, _, rec_d1 = enc_dec(input_d, AE_type, is_training=False)
+
+
+Disc_a = Disc(c_a)
+Disc_b = Disc(c_b)
+Disc_c = Disc(c_c)
+Disc_d = Disc(c_d)
+
+
+# G loss components
+rec_loss_a = tf.losses.mean_squared_error(input_a, rec_a)
+rec_loss_b = tf.losses.mean_squared_error(input_b, rec_b)
+rec_loss_c = tf.losses.mean_squared_error(input_c, rec_c)
+rec_loss_d = tf.losses.mean_squared_error(input_d, rec_d)
+
+rec_loss = rec_loss_a + rec_loss_b + rec_loss_c + rec_loss_d
+
+if AE_type == "VAE":
+    kld_loss_a = - \
+        tf.reduce_mean(0.5 * (1 + c_log_sigma_sq_a -
+                              c_mu_a**2 - tf.exp(c_log_sigma_sq_a)))
+    kld_loss_b = - \
+        tf.reduce_mean(0.5 * (1 + c_log_sigma_sq_b -
+                              c_mu_b**2 - tf.exp(c_log_sigma_sq_b)))
+    kld_loss_c = - \
+        tf.reduce_mean(0.5 * (1 + c_log_sigma_sq_c -
+                              c_mu_c**2 - tf.exp(c_log_sigma_sq_c)))
+    kld_loss_d = - \
+        tf.reduce_mean(0.5 * (1 + c_log_sigma_sq_d -
+                              c_mu_c**2 - tf.exp(c_log_sigma_sq_d)))
+
+    kld_loss = kld_loss_a + kld_loss_b + kld_loss_c + kld_loss_d
+else:
+    kld_loss_a = tf.constant(0.)
+    kld_loss_b = tf.constant(0.)
+    kld_loss_c = tf.constant(0.)
+    kld_loss_d = tf.constant(0.)
+
+    kld_loss = tf.constant(0.)
+
+adv_loss_b = tf.losses.mean_squared_error(tf.reduce_mean(
+    Disc_a), tf.reduce_mean(Disc_b))
+
+adv_loss_c = tf.losses.mean_squared_error(tf.reduce_mean(
+    Disc_a), tf.reduce_mean(Disc_c))
+adv_loss_d = tf.losses.mean_squared_error(tf.reduce_mean(
+    Disc_a), tf.reduce_mean(Disc_d))
+
+adv_loss = adv_loss_b + adv_loss_c + adv_loss_d
+
+G_loss = rec_loss + kld_loss * beta + adv_loss * gamma
+
+# D loss components
+wd_loss = tf.reduce_mean(Disc_b) - tf.reduce_mean(Disc_a)
+wd_loss1 = tf.reduce_mean(Disc_c) - tf.reduce_mean(Disc_a)
+wd_loss2 = tf.reduce_mean(Disc_d) - tf.reduce_mean(Disc_a)
+
+
+gp_loss = utils1.gradient_penalty(c_a, c_b, Disc)
+gp_loss1 = utils1.gradient_penalty(c_a, c_c, Disc)
+gp_loss2 = utils1.gradient_penalty(c_a, c_d, Disc)
+
+
+D_loss = wd_loss + wd_loss1 + wd_loss2 + \
+    (gp_loss + gp_loss1 + gp_loss2) * delta
+
+
+# optimizers
+d_vars = utils1.trainable_variables('discriminator')
+g_vars = utils1.trainable_variables(
+    ['Encoder', 'Decoder_a', 'Decoder_b', 'Decoder_c', 'Decoder_d'])
+
+# LR decay policy
+iters_per_epoch = int(min_n/batch_size)
+decay_steps = iters_per_epoch * decay_epochs
+
+
+G_global_step = tf.Variable(0, trainable=False)
+D_global_step = tf.Variable(0, trainable=False)
+
+G_learning_rate = tf.train.exponential_decay(lr, G_global_step, decay_steps,
+                                             decay_rate, staircase=True)
+D_learning_rate = tf.train.exponential_decay(lr, D_global_step, decay_steps,
+                                             decay_rate, staircase=True)
+
+update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+
+G_opt = tf.train.AdamOptimizer(learning_rate=G_learning_rate, beta1=0.5)
+D_opt = tf.train.AdamOptimizer(learning_rate=D_learning_rate, beta1=0.5)
+with tf.control_dependencies(update_ops):
+    G_step = G_opt.minimize(G_loss, var_list=g_vars, global_step=G_global_step)
+    D_step = D_opt.minimize(D_loss, var_list=d_vars, global_step=D_global_step)
+
+# summary
+G_summary = tl.summary({rec_loss_a: 'rec_loss_a',
+                        rec_loss_b: 'rec_loss_b',
+                        rec_loss_c: 'rec_loss_c',
+                        rec_loss_d: 'rec_loss_d',
+                        rec_loss: 'rec_loss',
+                        kld_loss_a: 'kld_loss_a',
+                        kld_loss_b: 'kld_loss_b',
+                        kld_loss_c: 'kld_loss_c',
+                        kld_loss_d: 'kld_loss_d',
+                        kld_loss: 'kld_loss',
+                        adv_loss: 'adv_loss',
+                        G_loss: 'G_loss'})
+D_summary = tl.summary({wd_loss: 'wd_loss',
+                        gp_loss: 'gp_loss',
+                        D_loss: 'D_loss'})
+
+# ==============================================================================
+# =                                    train                                   =
+# ==============================================================================
+# number of points to plot during training
+n_s = np.min([len(source_train_data), 10000])
+n_s1 = np.min([len(source1_train_data), 10000])
+n_s2 = np.min([len(source2_train_data), 10000])
+
+n_t = np.min([len(target_train_data), 10000])
+
+# compute PCA
+pca = decomposition.PCA()
+pca.fit(target_train_data)
+pc1 = 0
+pc2 = 1
+axis1 = 'PC'+str(pc1)
+axis2 = 'PC'+str(pc2)
+
+# session
+sess = tl.session()
+
+# saver
+saver = tf.train.Saver(max_to_keep=1)
+
+# summary writer
+summary_writer = tf.summary.FileWriter(
+    './output/%s/summaries' % experiment_name, sess.graph)
+
+# initialization
+ckpt_dir = './output/%s/checkpoints' % experiment_name
+pylib.mkdir(ckpt_dir)
+try:
+    tl.load_checkpoint(ckpt_dir, sess)
+except:
+    sess.run(tf.global_variables_initializer())
+
+
+# train
+overall_it = 0
+try:
+
+    for ep in range(n_epochs):
+        for it in range(iters_per_epoch):
+            overall_it += 1
+            t_batch = sess.run(t_next_element)
+            s_batch = sess.run(s_next_element)
+            s1_batch = sess.run(s1_next_element)
+            s2_batch = sess.run(s2_next_element)
+
+            # train D
+            D_summary_opt, _ = sess.run([D_summary, D_step],
+                                        feed_dict={input_a: t_batch, input_b: s_batch, input_c: s1_batch, input_d: s2_batch})
+            summary_writer.add_summary(D_summary_opt, overall_it)
+
+            # train G
+            g_summary_opt, _ = sess.run([G_summary, G_step],
+                                        feed_dict={input_a: t_batch, input_b: s_batch, input_c: s1_batch, input_d: s2_batch})
+            summary_writer.add_summary(g_summary_opt, overall_it)
+
+            # display
+            if (it + 1) % 1 == 0:
+                print("Epoch: (%3d/%5d) iteration: (%5d/%5d) lr: %f"
+                      % (ep+1, n_epochs, it+1, iters_per_epoch, sess.run(G_opt._lr)))
+        s_cal = sess.run(rec_a1, feed_dict={input_a: source_train_data[:n_s]})
+        s1_cal = sess.run(rec_a1, feed_dict={
+            input_a: source1_train_data[:n_s1]})
+        s2_cal = sess.run(rec_a1, feed_dict={
+            input_a: source2_train_data[:n_s2]})
+        t_rec = sess.run(rec_a1, feed_dict={input_a: target_train_data[:n_t]})
+
+        save_path = saver.save(sess, '%s/Epoch_%d.ckpt' % (ckpt_dir, ep))
+        print('Model is saved in file: %s' % save_path)
+except:
+    traceback.print_exc()
+finally:
+    sess.close()
+# ==============================================================================
+# =                 visualize calibration on test data   (this is where i can edit)                      =
+# ==============================================================================
+sess = tl.session()
+
+try:
+    tl.load_checkpoint(ckpt_dir, sess)
+except:
+    sess.run(tf.global_variables_initializer())
+
+t_rec_train, t_c_train = sess.run([rec_a1, c_a1], feed_dict={
+                                  input_a: target_train_data})
+s_cal_train = sess.run(rec_a1, feed_dict={input_a: source_train_data})
+s_rec_train, s_c_train = sess.run([rec_b1, c_b1], feed_dict={
+                                  input_b: source_train_data})
+
+s1_cal_train = sess.run(rec_a1, feed_dict={input_a: source1_train_data})
+s1_rec_train, s1_c_train = sess.run([rec_c1, c_c1], feed_dict={
+                                    input_c: source1_train_data})
+s2_cal_train = sess.run(rec_a1, feed_dict={input_a: source2_train_data})
+s2_rec_train, s2_c_train = sess.run([rec_d1, c_d1], feed_dict={
+                                    input_d: source2_train_data})
+if use_test:
+    t_rec_test, t_c_test = sess.run([rec_a1, c_a1], feed_dict={
+                                    input_a: target_test_data})
+    s_cal_test = sess.run(rec_a1, feed_dict={input_a: source_test_data})
+    s_rec_test, s_c_test = sess.run([rec_b1, c_b1], feed_dict={
+                                    input_b: source_test_data})
+
+    s1_cal_test = sess.run(rec_a1, feed_dict={input_a: source1_test_data})
+    s1_rec_test, s1_c_test = sess.run([rec_c1, c_c1], feed_dict={
+                                      input_c: source1_test_data})
+    s2_cal_test = sess.run(rec_a1, feed_dict={input_a: source2_test_data})
+    s2_rec_test, s2_c_test = sess.run([rec_d1, c_d1], feed_dict={
+                                      input_d: source2_test_data})
+for jkl in klm:
+    exec((jkl + "_calibrated") +
+         "=sess.run(rec_a1, feed_dict={input_a: eval(jkl)})")
+
+
+sess.close()
+
+
+target_pca = pca.transform(target_train_data)
+source_pca = pca.transform(source_train_data)
+source1_pca = pca.transform(source1_train_data)
+source2_pca = pca.transform(source2_train_data)
+
+sh.scatterHist(target_pca[:, pc1], target_pca[:, pc2],
+               source_pca[:, pc1], source_pca[:, pc2],
+               axis1, axis2, title="train data before calibration",
+               name1='target', name2='source')
+sh.scatterHist(target_pca[:, pc1], target_pca[:, pc2],
+               source1_pca[:, pc1], source1_pca[:,
+                                                pc2], axis1, axis2, title="train1 data before calibration",
+               name1='target', name2='source1')
+sh.scatterHist(target_pca[:, pc1], target_pca[:, pc2],
+               source2_pca[:, pc1], source2_pca[:,
+                                                pc2], axis1, axis2, title="train2 data before calibration",
+               name1='target', name2='source2')
+
+'''
+# target_rec_pca = pca.transform(t_rec_train)
+# source_cal_pca = pca.transform(s_cal_train)
+# source1_cal_pca = pca.transform(s1_cal_train)
+# source2_cal_pca = pca.transform(s2_cal_train)
+
+# sh.scatterHist(target_rec_pca[:, pc1], target_rec_pca[:, pc2],
+#               source_cal_pca[:, pc1], source_cal_pca[:, pc2],
+#               axis1, axis2,
+#               title="train data after calibration", name1='target', name2='source')
+
+# sh.scatterHist(target_rec_pca[:, pc1], target_rec_pca[:, pc2],
+#               source1_cal_pca[:, pc1], source1_cal_pca[:, pc2],
+#               axis1, axis2,
+#               title="train1 data after calibration", name1='target', name2='source1')
+# sh.scatterHist(target_rec_pca[:, pc1], target_rec_pca[:, pc2],
+#               source2_cal_pca[:, pc1], source2_cal_pca[:, pc2],
+#               axis1, axis2,
+#               title="train2 data after calibration", name1='target', name2='source2')
+
+
+# ==============================================================================
+# =                                  save data                                 =
+# ==============================================================================
+'''
+# save data for visualization
+save_dir = './output/%s/calibrated_data' % experiment_name
+pylib.mkdir(save_dir)
+np.savetxt(fname=save_dir+'/calibrated_source_train_data.csv',
+           X=s_cal_train, delimiter=',')
+np.savetxt(fname=save_dir+'/reconstructed_source_train_data.csv',
+           X=s_rec_train, delimiter=',')
+np.savetxt(fname=save_dir+'/reconstructed_target_train_data.csv',
+           X=t_rec_train, delimiter=',')
+np.savetxt(fname=save_dir+'/source_train_data.csv',
+           X=source_train_data, delimiter=',')
+np.savetxt(fname=save_dir+'/target_train_data.csv',
+           X=target_train_data, delimiter=',')
+np.savetxt(fname=save_dir+'/source_train_code.csv', X=s_c_train, delimiter=',')
+np.savetxt(fname=save_dir+'/target_train_code.csv', X=t_c_train, delimiter=',')
+
+
+np.savetxt(fname=save_dir+'/calibrated_source1_train_data.csv',
+           X=s1_cal_train, delimiter=',')
+np.savetxt(fname=save_dir+'/reconstructed_source1_train_data.csv',
+           X=s1_rec_train, delimiter=',')
+# np.savetxt(fname=save_dir+'/reconstructed_target_train_data.csv', X=t_rec_train, delimiter=',')
+np.savetxt(fname=save_dir+'/source1_train_data.csv',
+           X=source1_train_data, delimiter=',')
+# np.savetxt(fname=save_dir+'/target_train_data.csv', X=target_train_data, delimiter=',')
+np.savetxt(fname=save_dir+'/source1_train_code.csv',
+           X=s1_c_train, delimiter=',')
+# np.savetxt(fname=save_dir+'/target_train_code.csv', X=t_c_train, delimiter=',')
+
+np.savetxt(fname=save_dir+'/calibrated_source2_train_data.csv',
+           X=s2_cal_train, delimiter=',')
+np.savetxt(fname=save_dir+'/reconstructed_source2_train_data.csv',
+           X=s2_rec_train, delimiter=',')
+# np.savetxt(fname=save_dir+'/reconstructed_target_train_data.csv', X=t_rec_train, delimiter=',')
+np.savetxt(fname=save_dir+'/source2_train_data.csv',
+           X=source2_train_data, delimiter=',')
+# np.savetxt(fname=save_dir+'/target_train_data.csv', X=target_train_data, delimiter=',')
+np.savetxt(fname=save_dir+'/source2_train_code.csv',
+           X=s2_c_train, delimiter=',')
+# np.savetxt(fname=save_dir+'/target_train_code.csv', X=t_c_train, delimiter=',')
+
+
+if use_test:
+    np.savetxt(fname=save_dir+'/calibrated_source_test_data.csv',
+               X=s_cal_test, delimiter=',')
+    np.savetxt(fname=save_dir+'/reconstructed_source_test_data.csv',
+               X=s_rec_test, delimiter=',')
+    np.savetxt(fname=save_dir+'/calibrated_source1_test_data.csv',
+               X=s1_cal_test, delimiter=',')
+    np.savetxt(fname=save_dir+'/reconstructed_source1_test_data.csv',
+               X=s1_rec_test, delimiter=',')
+    np.savetxt(fname=save_dir+'/calibrated_source2_test_data.csv',
+               X=s2_cal_test, delimiter=',')
+    np.savetxt(fname=save_dir+'/reconstructed_source2_test_data.csv',
+               X=s2_rec_test, delimiter=',')
+
+    np.savetxt(fname=save_dir+'/reconstructed_target_test_data.csv',
+               X=t_rec_test, delimiter=',')
+    np.savetxt(fname=save_dir+'/source_test_data.csv',
+               X=source_test_data, delimiter=',')
+    np.savetxt(fname=save_dir+'/source1_test_data.csv',
+               X=source1_test_data, delimiter=',')
+    np.savetxt(fname=save_dir+'/source2_test_data.csv',
+               X=source2_test_data, delimiter=',')
+
+    np.savetxt(fname=save_dir+'/target_test_data.csv',
+               X=target_test_data, delimiter=',')
+    np.savetxt(fname=save_dir+'/source_test_code.csv',
+               X=s_c_test, delimiter=',')
+    np.savetxt(fname=save_dir+'/source1_test_code.csv',
+               X=s1_c_test, delimiter=',')
+    np.savetxt(fname=save_dir+'/source2_test_code.csv',
+               X=s2_c_test, delimiter=',')
+
+    np.savetxt(fname=save_dir+'/target_test_code.csv',
+               X=t_c_test, delimiter=',')
+
+    np.savetxt(fname=save_dir+'/calibrated_source1_test_data.csv',
+               X=s1_cal_test, delimiter=',')
+    np.savetxt(fname=save_dir+'/reconstructed_source1_test_data.csv',
+               X=s1_rec_test, delimiter=',')
+    # np.savetxt(fname=save_dir+'/reconstructed_target_test_data.csv', X=t_rec_test, delimiter=',')
+    np.savetxt(fname=save_dir+'/source1_test_data.csv',
+               X=source1_test_data, delimiter=',')
+    # np.savetxt(fname=save_dir+'/target_test_data.csv', X=target_test_data, delimiter=',')
+    np.savetxt(fname=save_dir+'/source1_test_code.csv',
+               X=s1_c_test, delimiter=',')
+    # np.savetxt(fname=save_dir+'/target_test_code.csv', X=t_c_test, delimiter=',')
+
+    np.savetxt(fname=save_dir+'/calibrated_source2_test_data.csv',
+               X=s2_cal_test, delimiter=',')
+    np.savetxt(fname=save_dir+'/reconstructed_source2_test_data.csv',
+               X=s2_rec_test, delimiter=',')
+    # np.savetxt(fname=save_dir+'/reconstructed_target_test_data.csv', X=t_rec_test, delimiter=',')
+    np.savetxt(fname=save_dir+'/source2_test_data.csv',
+               X=source2_test_data, delimiter=',')
+    # np.savetxt(fname=save_dir+'/target_test_data.csv', X=target_test_data, delimiter=',')
+    np.savetxt(fname=save_dir+'/source2_test_code.csv',
+               X=s2_c_test, delimiter=',')
+    # np.savetxt(fname=save_dir+'/target_test_code.csv', X=t_c_test, delimiter=',')
+
+
+# save data in original scale
+save_dir = './output/%s/calibrated_data_org_scale' % experiment_name
+pylib.mkdir(save_dir)
+
+target_train_data = utils1.recover_org_scale(
+    target_train_data, data_type, preprocessor)
+source_train_data = utils1.recover_org_scale(
+    source_train_data, data_type, preprocessor)
+t_rec_train = utils1.recover_org_scale(t_rec_train, data_type, preprocessor)
+s_cal_train = utils1.recover_org_scale(s_cal_train, data_type, preprocessor)
+np.savetxt(fname=save_dir+'/source_train_data.csv',
+           X=source_train_data, delimiter=',')
+np.savetxt(fname=save_dir+'/target_train_data.csv',
+           X=target_train_data, delimiter=',')
+np.savetxt(fname=save_dir+'/calibrated_source_train_data.csv',
+           X=s_cal_train, delimiter=',')
+np.savetxt(fname=save_dir+'/calibrated_target_train_data.csv',
+           X=t_rec_train, delimiter=',')
+
+# target_train_data = utils1.recover_org_scale(target_train_data, data_type, preprocessor)
+source1_train_data = utils1.recover_org_scale(
+    source1_train_data, data_type, preprocessor)
+# t_rec_train = utils1.recover_org_scale(t_rec_train, data_type, preprocessor)
+s1_cal_train = utils1.recover_org_scale(s1_cal_train, data_type, preprocessor)
+np.savetxt(fname=save_dir+'/source1_train_data.csv',
+           X=source1_train_data, delimiter=',')
+# np.savetxt(fname=save_dir+'/target_train_data.csv', X=target_train_data, delimiter=',')
+np.savetxt(fname=save_dir+'/calibrated_source1_train_data.csv',
+           X=s1_cal_train, delimiter=',')
+# np.savetxt(fname=save_dir+'/calibrated_target_train_data.csv', X=t_rec_train, delimiter=',')
+
+# target_train_data = utils1.recover_org_scale(target_train_data, data_type, preprocessor)
+source2_train_data = utils1.recover_org_scale(
+    source2_train_data, data_type, preprocessor)
+# t_rec_train = utils1.recover_org_scale(t_rec_train, data_type, preprocessor)
+s2_cal_train = utils1.recover_org_scale(s2_cal_train, data_type, preprocessor)
+np.savetxt(fname=save_dir+'/source2_train_data.csv',
+           X=source2_train_data, delimiter=',')
+# np.savetxt(fname=save_dir+'/target_train_data.csv', X=target_train_data, delimiter=',')
+np.savetxt(fname=save_dir+'/calibrated_source2_train_data.csv',
+           X=s2_cal_train, delimiter=',')
+# np.savetxt(fname=save_dir+'/calibrated_target_train_data.csv', X=t_rec_train, delimiter=',')
+
+save_dir2 = './output/%s/calibrated_data_org_scale/batch_corrected' % experiment_name
+pylib.mkdir(save_dir2)
+
+if batch_correct:
+    for jkl in klm:
+        exec(jkl + " = utils1.recover_org_scale(eval(jkl), data_type, preprocessor)")
+    for jkl in klm:
+        np.savetxt(fname=save_dir2 + '/' +
+                   jkl + '.csv', X=eval(jkl), delimiter=',')
+
+
+if use_test:
+    target_test_data = utils1.recover_org_scale(
+        target_test_data, data_type, preprocessor)
+    source_test_data = utils1.recover_org_scale(
+        source_test_data, data_type, preprocessor)
+    source1_test_data = utils1.recover_org_scale(
+        source1_test_data, data_type, preprocessor)
+    source2_test_data = utils1.recover_org_scale(
+        source2_test_data, data_type, preprocessor)
+
+    t_rec_test = utils1.recover_org_scale(t_rec_test, data_type, preprocessor)
+    s_cal_test = utils1.recover_org_scale(s_cal_test, data_type, preprocessor)
+    s1_cal_test = utils1.recover_org_scale(
+        s1_cal_test, data_type, preprocessor)
+    s2_cal_test = utils1.recover_org_scale(
+        s2_cal_test, data_type, preprocessor)
+
+    np.savetxt(fname=save_dir+'/source_test_data.csv',
+               X=source_train_data, delimiter=',')
+    np.savetxt(fname=save_dir+'/target_test_data.csv',
+               X=target_train_data, delimiter=',')
+    np.savetxt(fname=save_dir+'/calibrated_source_test_data.csv',
+               X=s_cal_train, delimiter=',')
+    np.savetxt(fname=save_dir+'/calibrated_source1_test_data.csv',
+               X=s1_cal_train, delimiter=',')
+    np.savetxt(fname=save_dir+'/calibrated_source2_test_data.csv',
+               X=s2_cal_train, delimiter=',')
+
+    np.savetxt(fname=save_dir+'/calibrated_target_test_data.csv',
+               X=t_rec_train, delimiter=',')
+
+print('Data saved successfully')
+input("Press Enter to exit")

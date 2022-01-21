@@ -5,8 +5,8 @@ account: rajimu
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 2790253
-bundleId: 3622811
+bundleId: 4057973
 url: https://rajimu.shinyapps.io/app_batch_correction/
-when: 1599944554.20152
+when: 1609792679.87827
 asMultiple: FALSE
 asStatic: FALSE
