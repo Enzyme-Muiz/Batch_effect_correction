@@ -1,6 +1,7 @@
 #batch_correction
 library("shinyWidgets")
 library(shinybusy)
+library(dplyr)
 #library(BiocManager)
 # run setRepositories() before deploying the app
 #BiocManager::install("flowClust")
@@ -2621,19 +2622,13 @@ for (x in c(1:xjx))
 pqr<- c()
 for (i in c(2:(length(rom)+1)))
     {new<- c()
-    kjk<- fSOM[[1]]$map$mapping[ ,1][(qq[i-1]+1):qq[i]]
+    kjk<- FlowSOM::GetMetaclusters(fSOM)[(qq[i-1]+1):qq[i]]
+    lengths<- length(kjk)
     kjk<- table(kjk)
-    for (p in vv)
-                #"yyy9", "yyy10", "yyy11", "yyy12", "yyy13", "yyy14", "yyy15", "yyy16", "yyy17", "yyy18", "yyy19", "yyy20"))
-            {yk<- kjk[get(p)]
-            attributes(yk)<- NULL
-            yk[is.na(yk)] <- 0
-            yk<- sum(yk)
-            new<- append(new, yk)}
-    #new[is.na(new)] <- 0
-    new1<- rep(c(sum(new)), times = xjx)  
-    new2<- (new/new1)*100
-    pqr<- rbind(pqr, new2)}  
+    kjk<- as.numeric(kjk)
+    new2<- (kjk/lengths)*100
+    pqr<- rbind(pqr, new2)
+    }  
 
 #generate the labels for proportion
 batch_name<- c()
@@ -2650,17 +2645,28 @@ xdata<- t(xdata)
 xdata<- data.frame(xdata)
 xdata<-cbind(id<- c(1:10), xdata)
 names(xdata)[1] <- "ID"
+
 melted = reshape2::melt(xdata, id.vars = "ID")
+melted$ID= as.factor(melted$ID)
+melted_pct <- melted %>% 
+group_by(ID) %>% 
+mutate(pct=prop.table(value))
 
-
-plot2= ggplot2::ggplot(data=melted, ggplot2::aes(x= ID, y=value,group=variable, col= variable))+
-ggplot2::geom_line()+
-ggplot2::labs(x="proportions", y= "cluster_number", title="Proportion of each cluster", fill= "Batches")+
+print(melted_pct)
+plot2= ggplot2::ggplot(data=melted_pct, ggplot2::aes(x= ID, y=pct,group=variable, fill= variable))+
+ggplot2::geom_bar(stat = "identity", color = "black")+
+ggplot2::labs(x="cluster_number", y= "proportions", title="Proportion of each cluster")+
 ggplot2::guides(fill=ggplot2::guide_legend(title="Batches"))+
 ggplot2::theme(legend.title = ggplot2::element_text(color = "blue", size = 10))+
-ggplot2::theme(panel.background = ggplot2::element_rect(fill= "grey"))+
+#ggplot2::theme(panel.background = ggplot2::element_rect(fill= "grey"))+
 ggplot2::theme(plot.title= ggplot2::element_text(hjust=0.5))+
-ggplot2::scale_y_continuous(labels = function(x) paste0(x, "%"))
+#ggplot2::scale_y_continuous(labels = function(x) paste0(x, "%"))
+ggplot2::theme(axis.title.x = ggplot2::element_text(face="bold", colour="black"))+
+ggplot2::theme(axis.text = ggplot2::element_text(face="bold", colour="black", size=12))+
+ggplot2::theme(axis.title.y = ggplot2::element_text(face= "bold", colour="black"))+
+
+ggplot2::theme(panel.border = ggplot2::element_rect(colour = "black", fill=NA, size=1))
+
 
 
 
