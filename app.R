@@ -1,24 +1,18 @@
-#batch_correction
 library("shinyWidgets")
 library(shinybusy)
 library(dplyr)
-#library(BiocManager)
-# run setRepositories() before deploying the app
-#BiocManager::install("flowClust")
-#options(repos = BiocManager::repositories("flowCore", "Biobase", "FlowSOM", "flowClust", "flowViz"))
-#options(repos = BiocManager::repositories())
-
-
-
-#getOption("repos")
-#getOption("repos")
-#library(ggplot2)
-#library(Biobase)
-#library(flowCore)
-#library(FlowSOM)
-#library(flowClust)
-#library(flowViz)
 library(shinycookie)
+
+source("cytofRUVUI.R")
+source("BatchAdjustUI.R")
+source("cytoNormUI.R")
+source("vaeUI.R")
+source("BatchVizUI.R")
+source("cytonorm_function.R")
+source("cytofRUV_preprocessing.R")
+source("for_cytofRUV.R")
+source("make_fcs_file.R")
+
 ui<- fluidPage(
    tags$head(tags$style(
        tags$link(rel="stylesheet", href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css")
@@ -28,611 +22,88 @@ ui<- fluidPage(
                       transition: opacity .25s ease-in-out;
                       -moz-transition: opacity .25s ease-in-out;
                       }"))),
-
-      
-
-
   add_busy_spinner(spin = "fading-circle"),
-  tabsetPanel(
-    tabPanel(title= "Batch_effect_viz",
-             fluidRow
-             (
-               column(12,align="center", tags$div(class= "fade",
-                                                 tags$em(tags$h1("Batch Effect Visualization")))),
-               
-             ),
-  sidebarLayout
-             (
-               
-  sidebarPanel(width= 7,           
-                 
-             
-  fluidRow(
-    column(6,center="align",
-  fileInput(
-    inputId="file1",
-    label= NULL,
-    multiple = FALSE,
-    accept = ".FCS",
-    width = '250px',
-    buttonLabel = "Browse",
-    placeholder = "anchor_sam_1"
-  )),
-  column(6, align="center",
-  fileInput(
-    inputId="file2",
-    label= NULL,
-    multiple = FALSE,
-    accept = ".FCS",
-    width = '250px',
-    buttonLabel = "Browse",
-    placeholder = "anchor_sam_2"
-  ))),
-  fluidRow(
-    column(6,center="align",
-           fileInput(
-             inputId="file3",
-             label= NULL,
-             multiple = FALSE,
-             accept = ".FCS",
-             width = '250px',
-             buttonLabel = "Browse",
-             placeholder = "anchor_sam_3"
-           )),
-    column(6, align="center",
-           fileInput(
-             inputId="file4",
-             label= NULL,
-             multiple = FALSE,
-             accept = ".FCS",
-             width = '250px',
-             buttonLabel = "Browse",
-             placeholder = "anchor_sam_4"
-           ))),
-    fluidRow(
-      column(6,center="align",
-             fileInput(
-               inputId="file5",
-               label= NULL,
-               multiple = FALSE,
-               accept = ".FCS",
-               width = '250px',
-               buttonLabel = "Browse",
-               placeholder = "anchor_sam_5"
-             )),
-      column(6, align="center",
-             fileInput(
-               inputId="file6",
-               label= NULL,
-               multiple = FALSE,
-               accept = ".FCS",
-               width = '250px',
-               buttonLabel = "Browse",
-               placeholder = "anchor_sam_6"
-             )))
-  ),
-               mainPanel(width=4, 
-
-                align="center", plotOutput("oid2", height = "300px"))
-               
-               ),
-  fluidRow(
-    column(2, 
-      pickerInput("variable", choices=c(),  options = list(`actions-box` = TRUE), multiple = TRUE)
-      ),
-column(2,
-
-  dropdown(
-             actionButton("action", "untransformed"),
-             actionButton("action4", "arcsinh_trans"),
-
-             label = "Preprocess",
-             inputId = "dataset_types"
-           )
-#actionButton(inputId = "action",label = "column_selection")
-)
-,
-    column(2, 
-
-      dropdown(
-               actionButton("action20", "update"),
-               actionButton("csv_button", "csv_button"),
-              actionButton("action2", "KS_batch"),
-             actionButton("action3", "UMAP_scatter"),
-             actionButton("action5", "clusters_proportion"),
-             actionButton("action7", "MMD"),
-
-
-             label = "Batch_viz",
-             inputId = "Batch_viz2"
-           )
-
-      #actionButton(inputId = "action2",label = "KS_batch")
-      ),
-
-  column(2,
-  downloadButton('foo')
-   ),
-
-column(2,
-  dropdown(label = "FILES_INPUT",
-             inputId = "files_input",
-    fileInput(
-    inputId="file90AA",
-    label= NULL,
-    multiple = FALSE,
-    accept = ".FCS",
-    width = '200px',
-    buttonLabel = "Browse",
-    placeholder = "Validation_1"
-  ),
-
-    fileInput(
-    inputId="file90",
-    label= NULL,
-    multiple = TRUE,
-    accept = ".FCS",
-    width = '200px',
-    buttonLabel = "Browse",
-    placeholder = "batch_1"
-  ),
-
-    fileInput(
-    inputId="file90A",
-    label= NULL,
-    multiple = TRUE,
-    accept = ".FCS",
-    width = '200px',
-    buttonLabel = "Browse",
-    placeholder = "batch_1_2"
-  ),
-fileInput(
-    inputId="file91AA",
-    label= NULL,
-    multiple = FALSE,
-    accept = ".FCS",
-    width = '200px',
-    buttonLabel = "Browse",
-    placeholder = "Validation_2"
-  ),
-
-
-
-    fileInput(
-    inputId="file91",
-    label= NULL,
-    multiple = TRUE,
-    accept = ".FCS",
-    width = '200px',
-    buttonLabel = "Browse",
-    placeholder = "batch_2"
-  ),
-
-
-    fileInput(
-    inputId="file91A",
-    label= NULL,
-    multiple = TRUE,
-    accept = ".FCS",
-    width = '200px',
-    buttonLabel = "Browse",
-    placeholder = "batch_2_2"
-  ),
-
-  fileInput(
-    inputId="file92",
-    label= NULL,
-    multiple = FALSE,
-    accept = ".FCS",
-    width = '200px',
-    buttonLabel = "Browse",
-    placeholder = "validation_3"
-  ),
-
-
-  fileInput(
-    inputId="file92A",
-    label= NULL,
-    multiple = TRUE,
-    accept = ".FCS",
-    width = '200px',
-    buttonLabel = "Browse",
-    placeholder = "batch_3_2"
-  ),
-
-
-  fileInput(
-    inputId="file93",
-    label= NULL,
-    multiple = FALSE,
-    accept = ".FCS",
-    width = '200px',
-    buttonLabel = "Browse",
-    placeholder = "validation_4"
-  ),
-  fileInput(
-    inputId="file93A",
-    label= NULL,
-    multiple = TRUE,
-    accept = ".FCS",
-    width = '200px',
-    buttonLabel = "Browse",
-    placeholder = "batch_4_2"
-  ),
-
-
-  fileInput(
-    inputId="file94",
-    label= NULL,
-    multiple = FALSE,
-    accept = ".FCS",
-    width = '200px',
-    buttonLabel = "Browse",
-    placeholder = "validation_5"
-  ),
-
-
-fileInput(
-    inputId="file94A",
-    label= NULL,
-    multiple = TRUE,
-    accept = ".FCS",
-    width = '200px',
-    buttonLabel = "Browse",
-    placeholder = "batch_5_2"
-  ),
-
-
-  fileInput(
-    inputId="file95",
-    label= NULL,
-    multiple = FALSE,
-    accept = ".FCS",
-    width = '200px',
-    buttonLabel = "Browse",
-    placeholder = "validation_6"
-  ),
-
-  fileInput(
-    inputId="file95A",
-    label= NULL,
-    multiple = TRUE,
-    accept = ".FCS",
-    width = '200px',
-    buttonLabel = "Browse",
-    placeholder = "batch_6_2"
-  )
-   )
-   )
-
-
-
-  )
-  ,
-  
-  tableOutput("contents")
-  
-),
-
-tabPanel(title= "Batch_Adjust",
-
-fluidRow
-             (
-               column(12,align="center", tags$div(class= "per_channel",
-                                                 tags$em(tags$h1("Per_channel Normalization")))),
-               
-             ), 
-
-sidebarLayout(
-sidebarPanel(   
-
-fluidRow
-             (
-               column(4,align="center", tags$div(class= "parameter",
-                                                 tags$em(tags$h4("Parameter_selection"))))),
-               
-
-
-sliderInput("integer1", "Percentile:",
-                  min = 1, max = 100,
-                  value = 5),
-pickerInput("variable7", label= "channelstoAdjust", choices=c(),  options = list(`actions-box` = TRUE), multiple = TRUE),
-
- pickerInput("integer2", label= "parameters" ,choices=c("SD"),  options = list(`actions-box` = TRUE), multiple = FALSE),
-
- actionButton("action6", "Batch_Adjust"),
-
- actionButton("action15", "confirm_Adjust")
- 
-     
-
-  ),
-
-
-mainPanel(
-  tableOutput("cdk1"),
-        )
-  )
-  ),
-
-
-
-tabPanel(title= "CytoNorm",
-
-fluidRow
-             (
-               column(12,align="center", tags$div(class= "cytonorm_channel",
-                                                 tags$em(tags$h1("CytoNorm Normalization")))),
-               
-             ), 
-
-sidebarLayout(
-sidebarPanel(   
-
-fluidRow
-             (
-               column(4,align="center", tags$div(class= "parameter_cyto",
-                                                 tags$em(tags$h4("Parameter_selection_cyto"))))),
-               
-
-
-sliderInput("integer1_cyto", "cluster_number:",
-                  min = 1, max = 20,
-                  value = 5),
-sliderInput("integer1_cyto_cell_number", "number_of_cells:",
-                  min = 1000, max = 20000,
-                  value = 2000, step = 500),
-sliderInput("quantiles", "quantile_to_use:",
-                  min = 1, max = 101,
-                  value = 1, step = 1),
-
-pickerInput("variable7_cyto", label= "channelstoAdjust", choices=c(),  options = list(`actions-box` = TRUE), multiple = TRUE),
-
-pickerInput("integer2_cyto", label= "goal" ,choices=c("mean"),  options = list(`actions-box` = TRUE), multiple = FALSE),
-actionButton("action66_cyto", "cluster_number_check"),
- actionButton("action6_cyto", "CytoNorm_Adjust"),
-
- actionButton("action15_cyto", "confirm_CytoNorm_Adjust")
- 
-     
-
-  ),
-
-
-mainPanel(
-  plotOutput("cdk1_cyto"),
-  tableOutput("cdk15_cyto"),
-        )
-  )
-  ),
-
-
-tabPanel(title= "VAE",
-  fluidRow
-             (
-               column(12,align="center", tags$div(class= "vae",
-                                                 tags$em(tags$h1("variational_autoencoder correction")))),
-               
-             ), 
-
-sidebarLayout(
-sidebarPanel(   
-
-fluidRow
-             (
-               column(4,align="center", tags$div(class= "parameters",
-                                                 tags$em(tags$h4("Parameter_selection"))))),
-               
-
-
-sliderInput("n_epochs", "n_epochs:",
-                  min = 1, max = 100,
-                  value = 5),
-sliderInput("code_dim", "code_dim:",
-                  min = 5, max = 20,
-                  value = 5),
-sliderInput("delta", "delta:",
-                  min = 0, max = 1,
-                  step = 0.05, 
-                  value = 0.1),
-sliderInput("beta", "beta:",
-                  min = 0, max = 2,
-                  step = 0.2, 
-                  value = 1),
-sliderInput("gamma", "gamma:",
-                  min = 0, max = 20,
-                  step = 2, 
-                  value = 5),
-sliderInput("batch_size", "batch_size:",
-                  min = 50, max = 500,
-                  step = 50, 
-                  value = 50),
-
-
- actionButton("action500", "Batch_Adjust"),
-
- actionButton("action55", "confirm_Adjust")
- 
-     
-
-  ),
-
-
-mainPanel(
-  tableOutput("vae_result"),
-        )
-  )
-
-
-
-  )
-
+tabsetPanel(
+BatchVizUI(),
+BatchAdjustUI(),
+cytofRUVUI(),
+cytoNormUI(),
+vaeUI()
 ),  
 shinyWidgets::setBackgroundColor("lightgreen"),
-
-
 tags$script(HTML(
     "document.body.style.backgroundColor = 'skyblue';"
-    
-#"var x = document.getElementByClassName("fade");
-#setTimeout(function(){ x.value = "2 seconds" }, 2000);
-#setTimeout(function(){ x.value = "4 seconds" }, 4000);
-#setTimeout(function(){ x.value = "6 seconds" }, 6000);
-  #"
   ))
-# ,
-# tags$script(HTML(
-#     "document.body.style.backgroundColor = 'skyblue';
-  
-#     var x = document.getElementById('action').onclick= function()
-#     {document.body.style.backgroundColor = 'green'};"
-    
-#   ))
-
-
-
-
 )
 
 
 server<- function(input, output, session)
 {
  options(shiny.maxRequestSize=800*1024^2)
-
-
-
-
-  observe({
-
-  file11 <- input$file1
-  #print(file11$datapath)
+ observe({
+file11 <- input$file1
   file.copy(file11$datapath, file.path("to_be_corrected","Batch_1_anchorstim.fcs"), overwrite = TRUE)
-
 file90AAB <- input$file90AA
-  #print(file11$datapath)
   file.copy(file90AAB$datapath, "to_be_corrected\\Batch_1_nonanchor_vali.fcs", overwrite = TRUE)
-
-
 file91AAB <- input$file91AA
-  #print(file11$datapath)
   file.copy(file91AAB$datapath, "to_be_corrected\\Batch_2_nonanchor_vali.fcs", overwrite = TRUE)
-
 file92 <- input$file92
-  #print(file11$datapath)
   file.copy(file92$datapath, "to_be_corrected\\Batch_3_nonanchor_vali.fcs", overwrite = TRUE)
-
 file93 <- input$file93
-  #print(file11$datapath)
   file.copy(file93$datapath, "to_be_corrected\\Batch_4_nonanchor_vali.fcs", overwrite = TRUE)
-
 file94 <- input$file94
-  #print(file11$datapath)
   file.copy(file94$datapath, "to_be_corrected\\Batch_5_nonanchor_vali.fcs", overwrite = TRUE)
-
 file95 <- input$file95
-  #print(file11$datapath)
   file.copy(file95$datapath, "to_be_corrected\\Batch_6_nonanchor_vali.fcs", overwrite = TRUE)
-
-
-
- file900 <- input$file90
- #print(str(input$file90))
- #print(length(input$file90$name))
- #print(input$file90$datapath)
-  
+file900 <- input$file90
   for ( ii in c(1:length(file900$name)))
        {file.copy(file900$datapath[ii], paste0("to_be_corrected\\Batch_1_1", ii, "nonanchor1.fcs"), overwrite = TRUE)}
- 
  file900A <- input$file90A
   for ( ii in c(1:length(file900A$name)))
   {file.copy(file900A$datapath[ii], paste0("to_be_corrected\\Batch_1_2", ii, "nonanchor1.fcs"), overwrite = TRUE)}
-  
-
-
   file22 <- input$file2
   file.copy(file22$datapath, "to_be_corrected\\Batch_2_anchorstim.fcs", overwrite = TRUE)
-
-
 file910 <- input$file91
   for ( ii in c(1:length(file910$name)))
-  {#file_number<- file_number+1
-   file.copy(file910$datapath[ii], paste0("to_be_corrected\\Batch_2_1", ii, "nonanchor1.fcs"), overwrite = TRUE)
-
+  {file.copy(file910$datapath[ii], paste0("to_be_corrected\\Batch_2_1", ii, "nonanchor1.fcs"), overwrite = TRUE)
   }
-
 file910A <- input$file91A
  for ( ii in c(1:length(file910A$name)))
-  
-  {file.copy(file910A$datapath[ii], paste0("to_be_corrected\\Batch_2_2", ii, "nonanchor1.fcs"), overwrite = TRUE)}
-
-
-
-  
-
-
+ {file.copy(file910A$datapath[ii], paste0("to_be_corrected\\Batch_2_2", ii, "nonanchor1.fcs"), overwrite = TRUE)}
   file33 <- input$file3
   print(file33$datapath)
   file.copy(file33$datapath, "to_be_corrected\\Batch_3_anchorstim.fcs", overwrite = TRUE)
-
 file920A <- input$file92A
  for ( ii in c(1:length(file920A$name)))
   
   {file.copy(file920A$datapath[ii], paste0("to_be_corrected\\Batch_3_1", ii, "nonanchor1.fcs"), overwrite = TRUE)}
-
-  
-
-  file44 <- input$file4
+file44 <- input$file4
   print(file44$datapath)
   file.copy(file44$datapath, "to_be_corrected\\Batch_4_anchorstim.fcs", overwrite = TRUE)
-  
-#file930 <- input$file93
-  #print(file44$datapath)
-#  file.copy(file930$datapath, "to_be_corrected\\Batch_4_1nonanchor1.fcs", overwrite = TRUE)
-  
-
 file930A <- input$file93A
- for ( ii in c(1:length(file930A$name)))
-  
+ for ( ii in c(1:length(file930A$name)))  
   {file.copy(file930A$datapath[ii], paste0("to_be_corrected\\Batch_4_1", ii, "nonanchor1.fcs"), overwrite = TRUE)}
-
-  
-
-
-
-
-  file55 <- input$file5
+file55 <- input$file5
   print(file55$datapath)
   file.copy(file55$datapath, "to_be_corrected\\Batch_5_anchorstim.fcs", overwrite = TRUE)
-  
-#file940 <- input$file94
-  #print(file55$datapath)
-#  file.copy(file940$datapath, "to_be_corrected\\Batch_5_1nonanchor1.fcs", overwrite = TRUE)
-  
 file940A <- input$file94A
  for ( ii in c(1:length(file940A$name)))
-  
   {file.copy(file940A$datapath[ii], paste0("to_be_corrected\\Batch_5_1", ii, "nonanchor1.fcs"), overwrite = TRUE)}
-  
-
-
-
-
   file66 <- input$file6
   print(file66$datapath)
-  file.copy(file66$datapath, "to_be_corrected\\Batch_6_anchorstim.fcs", overwrite = TRUE)
-  
+  file.copy(file66$datapath, "to_be_corrected\\Batch_6_anchorstim.fcs", overwrite = TRUE) 
 file950A <- input$file95A
  for ( ii in c(1:length(file950A$name)))
-  
-  {file.copy(file950A$datapath[ii], paste0("to_be_corrected\\Batch_6_1", ii, "nonanchor1.fcs"), overwrite = TRUE)}
-
-  
-
-
+    {file.copy(file950A$datapath[ii], paste0("to_be_corrected\\Batch_6_1", ii, "nonanchor1.fcs"), overwrite = TRUE)}
   onSessionEnded(function() {do.call(file.remove, list(list.files("to_be_corrected\\", pattern= "*.fcs", full.names = TRUE)))})
+  onSessionEnded(function() {do.call(file.remove, list(list.files("CytofRUV_output\\", full.names = TRUE)))})
+  #onSessionEnded(function() {do.call(file.remove, list(list.files("CytofRUV_output\\CytofRUV_Norm_data_HC2_all_cl_20",  recursive = TRUE, full.names = TRUE)))})
+  onSessionEnded(function() {unlink("CytofRUV_output\\CytofRUV_Norm_data_HC2_all_cl_20", recursive=TRUE)})
+  
+  onSessionEnded(function() {do.call(file.remove, list(list.files("res_of_cytofRUV_before_confirmed", full.names = TRUE)))})
   onSessionEnded(function() {do.call(file.remove, list(list.files("fcs_untransformed\\", pattern= "*.fcs", full.names = TRUE)))})
-  onSessionEnded(function() {do.call(file.remove, list(list.files("C:\\Users\\oaona\\app_batch_correction\\www\\concat\\", pattern= "*.fcs", full.names = TRUE)))})
-  onSessionEnded(function() {file.remove("channelstoadjust.txt")})
+  onSessionEnded(function() {do.call(file.remove, list(list.files("www\\concat\\", pattern= "*.fcs", full.names = TRUE)))})
+  #onSessionEnded(function() {file.remove("channelstoadjust.txt")})
   onSessionEnded(function() {do.call(file.remove, list(list.files("fcs_aligned\\", pattern= "*.fcs", full.names = TRUE)))})
   onSessionEnded(function() {do.call(file.remove, unlink("fcs_aligned\\DistributionPlots", recursive = TRUE))})
   
@@ -641,9 +112,6 @@ file950A <- input$file95A
   choicelist2<- append(c("SD"), paste(input$integer1, "p", sep=""))
 
   updatePickerInput(session, inputId = "integer2", choices= choicelist2)
-  
-
-
   ############### to update the goal in the 
   if(length(list.files("fcs_untransformed\\"))!=0)
 
@@ -651,10 +119,6 @@ file950A <- input$file95A
    file_list2<- stringr::str_subset(file_list, "Batch_")
    do.call(file.remove, list(list.files("fcs_aligned\\", full.names = TRUE)))
    unlink("fcs_aligned\\DistributionPlots", recursive = TRUE)
-   
-
-    
-
 file_list22<- paste0("fcs_untransformed\\", file_list2)
 where_the_pattern_is<- stringr::str_which(file_list22, "anchorstim")
 file_list222<- file_list22[where_the_pattern_is]
@@ -718,8 +182,7 @@ updatePickerInput(session, inputId = "integer2_cyto", choices= goal_list)}
 
 
 observe({
-
-if (file.exists("fcs_untransformed\\Batch_1_anchorstim.fcs"))
+   if (file.exists("fcs_untransformed\\Batch_1_anchorstim.fcs"))
    {
     jm<- "fcs_untransformed\\Batch_1_anchorstim.fcs"
 
@@ -748,6 +211,9 @@ else
       }
         
 updatePickerInput(session, inputId = "variable7", choices= choice)}
+
+
+
 
 })
 
@@ -798,46 +264,6 @@ fsom <- CytoNorm::prepareFlowSOM(file_list222,
                        seed = 1)
 cvss <- CytoNorm::testCV(fsom, cluster_values = c(3,5,7, 10, input$integer1_cyto, 15))  
 print(cvss$cvs) 
-
-PlotOverviewCV2 <- function(fsom, cv_res, max_cv = 2.5, show_cv = 1.5){
-    cvs <- cv_res$cvs
-    pctgs <- cv_res$pctgs
-    nMetaClus <- length(levels(fsom$metaclustering))
-    nClus <- fsom$FlowSOM$map$nNodes
-
-    cluster_values <- as.numeric(names(cvs))[-length(cvs)]
-    width <- max(cluster_values)
-    chosen <- which(cluster_values == nMetaClus)
-    cv_matrix <- do.call(rbind,
-                         lapply(cvs[as.character(cluster_values)],
-                                function (x) {
-                                    c(x,
-                                      rep(NA,
-                                          (width - length(x))))
-                                }))
-    cv_matrix <- rbind(cv_matrix,
-                       matrix(c(cvs[[as.character(nClus)]],
-                                rep(NA, (width - (nClus %% width)))),
-                              ncol = width,
-                              byrow = TRUE))
-    rownames(cv_matrix)[length(cluster_values) + 1] <- "Original\nclustering"
-    colnames(cv_matrix) <- NULL
-
-    disp <- apply(cv_matrix, 2, function(x) as.character(round(x, 2)))
-    disp[cv_matrix < show_cv] <- ""
-    disp[is.na(cv_matrix)] <- ""
-    #print(cv_matrix)
-    p_cvs <- pheatmap::pheatmap(cv_matrix,
-                                cluster_cols = FALSE,
-                                cluster_rows = FALSE,
-                                na_col = "white",
-                                border_color = "white",
-                                gaps_row = c(chosen-1, chosen,
-                                             length(cluster_values)),
-                                breaks = seq(0, max_cv, length.out = 100),
-                                display_numbers = disp)
-  
-   return(p_cvs) }
 plot3<- PlotOverviewCV2(fsom, cvss)
 
 
@@ -850,11 +276,131 @@ output$cdk1_cyto <- renderPlot({
 
 })
     })
+##############for cytofRUV preprocessing 
+observeEvent(input$action20_preprocess, {
+try({
+Panel_making_function("fcs_untransformed", "CytofRUV_output")
+Metadata_making_function("fcs_untransformed", "CytofRUV_output")
+print(getwd())
+list_in_fcs_untransformed <- list.files("fcs_untransformed", full.names = TRUE)
+file.copy(list_in_fcs_untransformed, "CytofRUV_output")
+
+
+
+setwd("CytofRUV_output")
+rep_samples<- c()
+for (i in c(1:6)){
+anchor_vali<- read_excel("Metadata.xlsx")$sample_id[str_detect(read_excel("Metadata.xlsx")$sample_id, "anchor|vali")]
+results<- anchor_vali[str_detect(anchor_vali, as.character(i))]
+if (!identical(results, character(0)) ) { 
+rep_samples<- append(rep_samples, results[1])
+        }
+}
+updatePickerInput(session, inputId = "choose_anchor", choices= rep_samples)
+
+
+setwd("..")
+
+
+
+
+    })
+
+
+
+    })
+
+observeEvent(input$action21_Normalize, {
+
+try({
+source("mmd.R")
+setwd("CytofRUV_output")
+clusters_nb = as.numeric(input$cluster_cytofRUV)
+seed = as.numeric(input$seed_numberID)
+rep_samples<- c()
+for (i in c(1:6)){
+anchor_vali<- read_excel("Metadata.xlsx")$sample_id[str_detect(read_excel("Metadata.xlsx")$sample_id, "anchor|vali")]
+results<- anchor_vali[str_detect(anchor_vali, as.character(i))]
+if (!identical(results, character(0)) ) { 
+
+rep_samples<- append(rep_samples, results[1])
+        }
+}
+
+setwd("..")
+
+print(input$choose_anchor)
+result<- append(input$choose_anchor, paste0("vali", str_match(input$choose_anchor, "\\d")[ ,1]))
+result<- rep_samples
+print(result)
+loading_data(clusters_nb = clusters_nb, seed = seed, rep_samples = result, copy_results_here = "res_of_cytofRUV_before_confirmed")
+    })
+
+
+mmd_result<- mmd_heatmap("res_of_cytofRUV_before_confirmed", 
+                         transform ="no"
+                        )
+
+mmd_result<- mmd_result$size
+output$table_outcome_cytofRuv <- renderTable({
+  mmd_result
+  })
+
+
+
+
+
+
+
+
+
+
+
+
+
+    })
+
+
+
+
+
+observeEvent(input$action_confirm_cytoRUV, {
+
+try({
+
+setwd("CytofRUV_output")
+clusters_nb = as.numeric(input$cluster_cytofRUV)
+seed = as.numeric(input$seed_numberID)
+rep_samples<- c()
+for (i in c(1:6)){
+anchor_vali<- read_excel("Metadata.xlsx")$sample_id[str_detect(read_excel("Metadata.xlsx")$sample_id, "anchor|vali")]
+results<- anchor_vali[str_detect(anchor_vali, as.character(i))]
+if (!identical(results, character(0)) ) { 
+
+rep_samples<- append(rep_samples, results[1])
+        }
+}
+
+setwd("..")
+
+print(input$choose_anchor)
+result<- append(input$choose_anchor, paste0("vali", str_match(input$choose_anchor, "\\d")[ ,1]))
+result<- rep_samples
+print(result)
+loading_data(clusters_nb = clusters_nb, seed = seed, rep_samples = result)
+    })
+})
+
+
+
+
+
 
 
 ##for cytonorm_adjust on the anchors
 
 observeEvent(input$action6_cyto, {
+source("mmd.R")
 if(    length(list.files("fcs_untransformed\\"))!=0)
 
    { file_list<- list.files("fcs_untransformed\\")
@@ -884,34 +430,32 @@ file_list223<- file_list22[where_the_pattern_iss]
 print(file_list223)
 
 print(file_list222)
-#romm <- list.files(path = "C:\\Users\\oaona\\OneDrive\\Desktop\\3622\\cytonorm_controls\\", full.names = TRUE)
-#print(romm)
 ####copy to the root
 for (iii in file_list22)
 
 
     {file.copy(iii, basename(iii), overwrite = TRUE)
     }
-
-
-
-
 #print(channels)
-if (input$integer2_cyto==1)
-{model <- CytoNorm::CytoNorm.train(files = file_list222, outputDir=  ".", labels = as.numeric(gsub("\\D", "", file_list222)), channels, transformList = NULL, normMethod.train = CytoNorm::QuantileNorm.train,
-                        normParams = list(nQ = as.numeric(input$quantiles), goal = input$integer2_cyto), seed = 1, verbose = TRUE)
-}
-else
-{FlowSOM.params = list(nCells = 6000, xdim = 5, ydim = 5, nClus = input$integer1_cyto, scale = FALSE)
-model <- CytoNorm::CytoNorm.train(files = file_list222, outputDir=  ".", labels = as.numeric(gsub("\\D", "", file_list222)), channels, transformList = NULL, FlowSOM.params = list(nCells = input$integer1_cyto_cell_number, xdim = 5, ydim = 5, nClus = input$integer1_cyto, scale = FALSE), normMethod.train = CytoNorm::QuantileNorm.train,
-                        normParams = list(nQ = as.numeric(input$quantiles), goal = input$integer2_cyto), seed = 1, verbose = TRUE)
-}
+print("I am here")
+model <- CytoNorm::CytoNorm.train(files = file_list222, 
+  outputDir=  ".", 
+  labels = as.numeric(gsub("\\D", "", file_list222)), 
+  channels, 
+  transformList = NULL, 
+  FlowSOM.params = list(nCells = input$integer1_cyto_cell_number, xdim = 5, ydim = 5, nClus = input$integer1_cyto, scale = FALSE), 
+  normMethod.train = CytoNorm::QuantileNorm.train,
+  normParams = list(nQ = as.numeric(input$quantiles), 
+  goal = input$integer2_cyto), 
+  seed = 1, 
+  verbose = TRUE)
 
-
+print("I have left")
 
 CytoNorm::CytoNorm.normalize(model = model,
-                   files = basename(file_list223),
-                   labels = as.numeric(gsub("\\D", "", basename(file_list223))),
+                   files = c(basename(file_list223), basename(file_list222)),
+                   labels = as.numeric(gsub("\\D", "", c(basename(file_list223), basename(file_list222))
+                    )),
                    transformList = NULL,
                    transformList.reverse = NULL,
                    normMethod.normalize = CytoNorm::QuantileNorm.normalize,
@@ -922,16 +466,16 @@ CytoNorm::CytoNorm.normalize(model = model,
 
 
 
-CytoNorm::CytoNorm.normalize(model = model,
-                   files = basename(file_list222),
-                   labels = as.numeric(gsub("\\D", "", basename(file_list222))),
-                   transformList = NULL,
-                   transformList.reverse = NULL,
-                   normMethod.normalize = CytoNorm::QuantileNorm.normalize,
-                   outputDir = ".",
-                   prefix = "Norm_",
-                   clean = TRUE,
-                   verbose = TRUE)
+# CytoNorm::CytoNorm.normalize(model = model,
+#                    files = basename(file_list222),
+#                    labels = as.numeric(gsub("\\D", "", basename(file_list222))),
+#                    transformList = NULL,
+#                    transformList.reverse = NULL,
+#                    normMethod.normalize = CytoNorm::QuantileNorm.normalize,
+#                    outputDir = ".",
+#                    prefix = "Norm_",
+#                    clean = TRUE,
+#                    verbose = TRUE)
 
 
 
@@ -996,246 +540,9 @@ for (iii in file_list_before2)
       file.remove(iii)
     }
 
-mmd_heatmap<- function(x)
-    {list_file<- list.files(path=x, , full.names = TRUE)
-     #print(list_file)
-
-      file_list_before<- stringr::str_starts(list_file, "fcs_untransformed/Batch_")
-      #print(file_list_before)
-      file_list_before<- list_file[file_list_before]
-      file_list_before_1<- stringr::str_ends(file_list_before, "anchorstim.fcs")
-      file_list_before<- file_list_before[file_list_before_1]
-
-      file_list_after<- stringr::str_starts(list_file, "fcs_untransformed/Norm_")
-      file_list_after<- list_file[file_list_after]
-      file_list_after_1<- stringr::str_ends(file_list_after, "anchorstim.fcs")
-      file_list_after<- file_list_after[file_list_after_1]
-      
-      #print(paste("file_list_before:",file_list_before))
-      
 
 
-      file_list_before2<- stringr::str_starts(list_file, "fcs_untransformed/Batch_")
-      #print(file_list_before)
-      file_list_before2<- list_file[file_list_before2]
-      file_list_before_12<- stringr::str_ends(file_list_before2, "vali.fcs")
-      file_list_before2<- file_list_before2[file_list_before_12]
-
-      file_list_after2<- stringr::str_starts(list_file, "fcs_untransformed/Norm_")
-      file_list_after2<- list_file[file_list_after2]
-      file_list_after_12<- stringr::str_ends(file_list_after2, "vali.fcs")
-      file_list_after2<- file_list_after2[file_list_after_12]
-      
-
-
-
-      table_to_display <- data.frame(matrix(ncol = 3, nrow = 0))
-      x <- c("batches", "mmd_distance_before", "mmd_distance_after")
-      colnames(table_to_display) <- x
-
-     number_of_file<- length(file_list_before)
-
-     # if (number_of_file==2)
-     #     {BB1<- flowCore::read.FCS(file_list_before[1])
-     #      BBT1<- flowCore::exprs(BB1)
-     #      BB2<- flowCore::read.FCS(file_list_before[2])
-     #      BBT2<- flowCore::exprs(BB2)
-     #      sampling_number<- min(dim(BBT1)[1], dim(BBT2)[1], 2000)
-     #      BBT1<- BBT1[sample(nrow(BBT1), sampling_number), ]
-     #      BBT1<- data.matrix(BBT1)
-     #      BBT2<- BBT2[sample(nrow(BBT2), sampling_number), ]
-     #      BBT2<- data.matrix(BBT2)
-     #      mmdo_before <- kernlab::kmmd(BBT1, BBT2)
-          
-     #      BB1<- flowCore::read.FCS(file_list_after[1])
-     #      BBT1<- flowCore::exprs(BB1)
-     #      BB2<- flowCore::read.FCS(file_list_after[2])
-     #      BBT2<- flowCore::exprs(BB2)
-     #      sampling_number<- min(dim(BBT1)[1], dim(BBT2)[1], 2000)
-     #      BBT1<- BBT1[sample(nrow(BBT1), sampling_number), ]
-     #      BBT1<- data.matrix(BBT1)
-     #      BBT2<- BBT2[sample(nrow(BBT2), sampling_number), ]
-     #      BBT2<- data.matrix(BBT2)
-     #      mmdo_after <- kernlab::kmmd(BBT1, BBT2)
-          
-     #      if (length(file_list_after2)==2)
-          
-     #      {BB1<- flowCore::read.FCS(file_list_before2[1])
-     #      BBT1<- flowCore::exprs(BB1)
-     #      BB2<- flowCore::read.FCS(file_list_before2[2])
-     #      BBT2<- flowCore::exprs(BB2)
-     #      sampling_number<- min(dim(BBT1)[1], dim(BBT2)[1], 2000)
-     #      BBT1<- BBT1[sample(nrow(BBT1), sampling_number), ]
-     #      BBT1<- data.matrix(BBT1)
-     #      BBT2<- BBT2[sample(nrow(BBT2), sampling_number), ]
-     #      BBT2<- data.matrix(BBT2)
-     #      mmdo_before2 <- kernlab::kmmd(BBT1, BBT2)
-          
-     #      BB1<- flowCore::read.FCS(file_list_after2[1])
-     #      BBT1<- flowCore::exprs(BB1)
-     #      BB2<- flowCore::read.FCS(file_list_after2[2])
-     #      BBT2<- flowCore::exprs(BB2)
-     #      sampling_number<- min(dim(BBT1)[1], dim(BBT2)[1], 2000)
-     #      BBT1<- BBT1[sample(nrow(BBT1), sampling_number), ]
-     #      BBT1<- data.matrix(BBT1)
-     #      BBT2<- BBT2[sample(nrow(BBT2), sampling_number), ]
-     #      BBT2<- data.matrix(BBT2)
-     #      mmdo_after2 <- kernlab::kmmd(BBT1, BBT2)
-          
-     #    newline<- data.frame(batches= c("1_2a","1_2v"),mmd_distance_before= c(kernlab::mmdstats(mmdo_before)[1], kernlab::mmdstats(mmdo_before2)[1]), mmd_distance_after= c(kernlab::mmdstats(mmdo_after)[1],kernlab::mmdstats(mmdo_after2)[1]))
-     #     names(newline)<-c("batches", "mmd_distance_before", "mmd_distance_after")
-     #     table_to_display <- rbind(table_to_display, newline)
-         
-
-     #      }  else{newline<- data.frame(batches= "1_2",mmd_distance_before= kernlab::mmdstats(mmdo_before)[1], mmd_distance_after= kernlab::mmdstats(mmdo_after)[1])
-     #     names(newline)<-c("batches", "mmd_distance_before", "mmd_distance_after")
-     #     #print(newline) 
-     #     table_to_display <- rbind(table_to_display, newline)
-
-         
-         Batches_num2<- c()
-         anchor_mmd_distance_before2<-c()
-        for (i in c(1:(length(file_list_before)-1)))
-        {for (j in c((i+1): length(file_list_before)))
-          {BB1<- flowCore::read.FCS(file_list_before[i])
-           ii<- as.numeric(gsub("\\D", "", file_list_before[i]))
-
-          BBT1<- flowCore::exprs(BB1)
-          BB2<- flowCore::read.FCS(file_list_before[j])
-          jj<-  as.numeric(gsub("\\D", "", file_list_before[j]))
-          ijij<- paste0(ii, jj)
-          Batches_num2<- append(Batches_num2, ijij)
-          BBT2<- flowCore::exprs(BB2)
-          sampling_number<- min(dim(BBT1)[1], dim(BBT2)[1], 2000)
-          BBT1<- BBT1[sample(nrow(BBT1), sampling_number), ]
-          BBT1<- data.matrix(BBT1)
-          BBT2<- BBT2[sample(nrow(BBT2), sampling_number), ]
-          BBT2<- data.matrix(BBT2)
-          mmdo_before <- kernlab::kmmd(BBT1, BBT2)
-
-          anchor_mmd_distance_before2<- append(anchor_mmd_distance_before2, kernlab::mmdstats(mmdo_before)[1])
-          }} 
-          anchor_before<- cbind(Batches_num2, anchor_mmd_distance_before2)
-
-
-
-
-          Batches_num2<- c()
-         vali_mmd_distance_before2<-c()
-        for (i in c(1:(length(file_list_before2)-1)))
-        {for (j in c((i+1): length(file_list_before2)))
-          {BB1<- flowCore::read.FCS(file_list_before2[i])
-           ii<- as.numeric(gsub("\\D", "", file_list_before2[i]))
-
-          BBT1<- flowCore::exprs(BB1)
-          BB2<- flowCore::read.FCS(file_list_before2[j])
-          jj<-  as.numeric(gsub("\\D", "", file_list_before2[j]))
-          ijij<- paste0(ii, jj)
-          Batches_num2<- append(Batches_num2, ijij)
-          BBT2<- flowCore::exprs(BB2)
-          sampling_number<- min(dim(BBT1)[1], dim(BBT2)[1], 2000)
-          BBT1<- BBT1[sample(nrow(BBT1), sampling_number), ]
-          BBT1<- data.matrix(BBT1)
-          BBT2<- BBT2[sample(nrow(BBT2), sampling_number), ]
-          BBT2<- data.matrix(BBT2)
-          mmdo_before <- kernlab::kmmd(BBT1, BBT2)
-
-          vali_mmd_distance_before2<- append(vali_mmd_distance_before2, kernlab::mmdstats(mmdo_before)[1])
-          }} 
-          vali_before<- cbind(Batches_num2, vali_mmd_distance_before2)
-
-
-
-
-
-
-
-
-          Batches_num2<- c()
-         anchor_mmd_distance_after2<-c()
-        for (i in c(1:(length(file_list_after)-1)))
-        {for (j in c((i+1): length(file_list_after)))
-          {BB1<- flowCore::read.FCS(file_list_after[i])
-           ii<- as.numeric(gsub("\\D", "", file_list_after[i]))
-
-          BBT1<- flowCore::exprs(BB1)
-          BB2<- flowCore::read.FCS(file_list_after[j])
-          jj<-  as.numeric(gsub("\\D", "", file_list_after[j]))
-          ijij<- paste0(ii, jj)
-          Batches_num2<- append(Batches_num2, ijij)
-          BBT2<- flowCore::exprs(BB2)
-          sampling_number<- min(dim(BBT1)[1], dim(BBT2)[1], 2000)
-          BBT1<- BBT1[sample(nrow(BBT1), sampling_number), ]
-          BBT1<- data.matrix(BBT1)
-          BBT2<- BBT2[sample(nrow(BBT2), sampling_number), ]
-          BBT2<- data.matrix(BBT2)
-          mmdo_before <- kernlab::kmmd(BBT1, BBT2)
-
-          anchor_mmd_distance_after2<- append(anchor_mmd_distance_after2, kernlab::mmdstats(mmdo_before)[1])
-          }} 
-          anchor_after<- cbind(Batches_num2, anchor_mmd_distance_after2)
-
-          Batches_num2<- c()
-         vali_mmd_distance_after2<-c()
-        for (i in c(1:(length(file_list_after2)-1)))
-        {for (j in c((i+1): length(file_list_after2)))
-          {BB1<- flowCore::read.FCS(file_list_after2[i])
-           ii<- as.numeric(gsub("\\D", "", file_list_after2[i]))
-
-          BBT1<- flowCore::exprs(BB1)
-          BB2<- flowCore::read.FCS(file_list_after2[j])
-          jj<-  as.numeric(gsub("\\D", "", file_list_after2[j]))
-          ijij<- paste0(ii, jj)
-          Batches_num2<- append(Batches_num2, ijij)
-          BBT2<- flowCore::exprs(BB2)
-          sampling_number<- min(dim(BBT1)[1], dim(BBT2)[1], 2000)
-          BBT1<- BBT1[sample(nrow(BBT1), sampling_number), ]
-          BBT1<- data.matrix(BBT1)
-          BBT2<- BBT2[sample(nrow(BBT2), sampling_number), ]
-          BBT2<- data.matrix(BBT2)
-          mmdo_before <- kernlab::kmmd(BBT1, BBT2)
-
-          vali_mmd_distance_after2<- append(vali_mmd_distance_after2, kernlab::mmdstats(mmdo_before)[1])
-          }} 
-          vali_after<- cbind(Batches_num2, vali_mmd_distance_after2)
-
-         
-
-         merged<- merge(anchor_before,vali_before, by = "Batches_num2", all = TRUE)
-
-         merged<- merge(merged, anchor_after, by = "Batches_num2", all = TRUE)
-         merged<- merge(merged, vali_after, by = "Batches_num2", all = TRUE)
-
-         colnames(merged)<- c("batch", "anchor_b", "vali_b", "anchor_a", "vali_a")
-
-
-         print(merged)
-
-
-
-
-         return(merged)
-         
-
-
-
-          #print("Batch_num2")
-
-          #print(Batches_num2) 
-          #print("mmd_distance_before2") 
-
-          #print(mmd_distance_before2)  
-         #}
-
-
-              #}
-
-#print(table_to_display)
-
-}
-
-
-display<- mmd_heatmap("fcs_untransformed/")
+display<- mmd_heatmap2("fcs_untransformed/")
 output$cdk15_cyto <- renderTable({
   display
   })
@@ -1266,7 +573,14 @@ for (iii in file_list_after)
 
 ######for_confirm_cytonom_adjust
 
-observeEvent(input$action15_cyto, {
+observeEvent(input$action15_cyto, 
+
+try(
+
+
+{
+
+{
 if(    length(list.files("fcs_untransformed\\"))!=0)
 
    { file_list<- list.files("fcs_untransformed\\")
@@ -1296,8 +610,15 @@ file_list223<- file_list22[where_the_pattern_iss]
 print(paste0("check",file_list223))
 
 print(file_list222)
-#romm <- list.files(path = "C:\\Users\\oaona\\OneDrive\\Desktop\\3622\\cytonorm_controls\\", full.names = TRUE)
-#print(romm)
+
+
+file_list22<- paste0("fcs_untransformed\\", file_list2)
+print(file_list22)
+vali_files_to_be_corrected<- stringr::str_which(file_list22, "nonanchor_vali")
+print(paste0("ok", vali_files_to_be_corrected))
+vali_files_to_be_corrected<- file_list22[vali_files_to_be_corrected]
+
+
 ####copy to the root
 for (iii in file_list22)
 
@@ -1309,36 +630,26 @@ for (iii in file_list22)
 
 
 #print(channels)
-if (input$integer2_cyto==1)
-{model <- CytoNorm::CytoNorm.train(files = file_list222, outputDir=  ".", labels = as.numeric(gsub("\\D", "", file_list222)), channels, transformList = NULL, normMethod.train = CytoNorm::QuantileNorm.train,
-                        normParams = list(nQ = as.numeric(input$quantiles), goal = input$integer2_cyto), seed = 1, verbose = TRUE)
-}
-else
-{FlowSOM.params = list(nCells = 6000, xdim = 5, ydim = 5, nClus = input$integer1_cyto, scale = FALSE)
-model <- CytoNorm::CytoNorm.train(files = file_list222, outputDir=  ".", labels = as.numeric(gsub("\\D", "", file_list222)), channels, transformList = NULL, FlowSOM.params = list(nCells = input$integer1_cyto_cell_number, xdim = 5, ydim = 5, nClus = input$integer1_cyto, scale = FALSE), normMethod.train = CytoNorm::QuantileNorm.train,
-                        normParams = list(nQ = as.numeric(input$quantiles), goal = input$integer2_cyto), seed = 1, verbose = TRUE)
-}
+model <- CytoNorm::CytoNorm.train(files = file_list222, 
+  outputDir=  ".", 
+  labels = as.numeric(gsub("\\D", "", file_list222)), 
+  channels, 
+  transformList = NULL, 
+  FlowSOM.params = list(nCells = input$integer1_cyto_cell_number, xdim = 5, ydim = 5, nClus = input$integer1_cyto, scale = FALSE), 
+  normMethod.train = CytoNorm::QuantileNorm.train,
+  normParams = list(nQ = as.numeric(input$quantiles), 
+  goal = input$integer2_cyto), 
+  seed = 1, 
+  verbose = TRUE)
+
 ###generate labels for the nonanchors non-vali
 want <- grep(pattern = "(^\\D+\\_\\d)", x = basename(file_list223), value= TRUE)
 want <- sub(pattern = "(^\\D+\\_\\d).*", replacement = "\\1", x = want)
 want<-as.numeric(gsub("\\D", "", want))
 
 CytoNorm::CytoNorm.normalize(model = model,
-                   files = basename(file_list223),
-                   labels = want,
-                   transformList = NULL,
-                   transformList.reverse = NULL,
-                   normMethod.normalize = CytoNorm::QuantileNorm.normalize,
-                   outputDir = ".",
-                   prefix = "Norm_",
-                   clean = TRUE,
-                   verbose = TRUE)
-
-
-
-CytoNorm::CytoNorm.normalize(model = model,
-                   files = basename(file_list222),
-                   labels = as.numeric(gsub("\\D", "", basename(file_list222))),
+                   files = c(basename(file_list223),basename(file_list222), basename(vali_files_to_be_corrected)) ,
+                   labels = c(want, as.numeric(gsub("\\D", "", c(basename(file_list222), basename(vali_files_to_be_corrected))))),
                    transformList = NULL,
                    transformList.reverse = NULL,
                    normMethod.normalize = CytoNorm::QuantileNorm.normalize,
@@ -1353,7 +664,10 @@ file_list_after<- stringr::str_starts(list_file, "./Norm_")
 file_list_after<- list_file[file_list_after]
 file_list_after_1<- stringr::str_ends(file_list_after, "anchorstim.fcs")
 file_list_after_2<- stringr::str_ends(file_list_after, "nonanchor1.fcs")
+vali_files_corrected<- stringr::str_ends(file_list_after, "vali.fcs")
+
 file_list_after2<- file_list_after[file_list_after_2]
+vali_files_corrected<- file_list_after[vali_files_corrected]
 
 file_list_after<- file_list_after[file_list_after_1]
 
@@ -1392,6 +706,14 @@ for (iii in file_list_after2)
     {file.copy(iii, paste0("fcs_aligned\\",basename(iii)), overwrite = TRUE)
     file.remove(iii)
     }
+
+for (iii in vali_files_corrected)
+
+
+    {file.copy(iii, paste0("fcs_aligned\\",basename(iii)), overwrite = TRUE)
+    file.remove(iii)
+    }
+
 for (iii in file_list_before2)
     {print(iii)
       file.remove(iii)
@@ -1407,15 +729,30 @@ for (iii in file_list_before2)
     }
 
 
+path = "fcs_aligned//"
+
+list_in_fcs_untransformed <- list.files(path, full.names = TRUE)
+list2<- list_in_fcs_untransformed[str_detect(list_in_fcs_untransformed, ".fcs")]
+file.rename(list2, paste0(path, str_match(basename(list2), "(Batch_.+)")[ ,1]))
+list_in_fcs_untransformed <- list.files(path, full.names = TRUE)
+list2<- list_in_fcs_untransformed[str_detect(list_in_fcs_untransformed, ".fcs")]
+file.copy(list2, "fcs_untransformed", overwrite = TRUE)
 
 
 
 
 
 
+
+
+}
 
 
 })
+
+
+
+)
 
 
 
@@ -1724,74 +1061,19 @@ output$foo = downloadHandler(
 
 
 observeEvent(input$action7, {
-   rom6<- list.files(path = "fcs_untransformed/", pattern= "*anchorstim.fcs", full.names = TRUE)
-   empty<- c()
+source("mmd.R")
+mmd_result<- mmd_heatmap("fcs_untransformed", 
+                         transform ="no"
+                        )
 
-
-   length<- c()
-   for (xyz in rom6)
-    {yz<- flowCore::read.FCS(xyz, truncate_max_range = FALSE)
-    kkk<- dim(flowCore::exprs(yz))[1]
-    length<- append(length, kkk)}
-    minimum1<- min(length)
-
-   minimum2<- min(minimum1, 1000)
-
-   for (jj in rom6)
-    {BB<- flowCore::read.FCS(jj, truncate_max_range = FALSE)
-    BBT<- data.frame(flowCore::exprs(BB))
-    set.seed(45)
-    subset<- BBT[sample(nrow(BBT), minimum2), ]
-    empty<- rbind(empty, subset)}
-    set.seed(4)
-umapframe<- umap::umap(empty)
-
-colnames(umapframe$layout)<- c("UMAP_1", "UMAP_2")
-
-umapframe$layout<- data.frame(umapframe$layout)
-
-Batches_num= paste(c(1:length(rom6)))
-
-Batches= rep(Batches_num, each = minimum2)
-
-plot1<- ggplot2::ggplot(data=umapframe$layout, ggplot2::aes(x= UMAP_1, y= UMAP_2,group= Batches, col= Batches))+
-ggplot2::geom_point(shape= 18, size= 3)+ ggplot2::theme(panel.background = ggplot2::element_rect(fill = 'white', colour = 'black'))
-
-#plot(umapframe$layout, main= "Aligned Batches_ 95th percentile", col= rep(c("red", "blue", "green"), times = c(1000, 1000, 1000)), ylab="UMAP_2", xlab="UMAP_1")
-#legend("topright",c("batch_1", "batch_2", "batch_3"),fill=c("red", "blue", "green"))
-
-
-
-
-
-
+mmd_result<- mmd_result$size
+#plot1<- grid.table(mmd_result)
 output$oid2= renderPlot({
-  
-plot1
-
-
-}) 
-output$foo = downloadHandler(
-      filename = 'test.jpeg',
-      content = function(file) {
-        ggplot2::ggsave(file, plot = plot1, device = "jpeg", antialias="none", dpi=300)
-    }
-
-
-      )
-
-
-
-
-
-
-
-
-
-
-
-
+  grid.table(mmd_result)
   })
+ 
+
+})
 
 
 
@@ -2162,6 +1444,10 @@ jjk1<- choice2[as.numeric(input$variable)]
   print(jjk1)
    for (file in files)  
    { jjk<- flowCore::exprs(flowCore::read.FCS(file, truncate_max_range = FALSE))[ , our_head]
+     jjk<- jjk[rowSums(jjk[])>0, ]
+     jjk<- na.omit(jjk)
+     jjk <- jjk[!is.infinite(rowSums(jjk)),]
+
     colnames(jjk)<- jjk1
 
 
@@ -2177,21 +1463,8 @@ jjk1<- choice2[as.numeric(input$variable)]
     {write.table(jjk, file.path("vae","source_test_data.csv"), row.names= FALSE, col.names= FALSE, sep = ",")}
   else {}
   
-
-   
-   meta <- data.frame(name=colnames(jjk), desc=colnames(jjk))
- 
-  meta$range <- apply(apply(jjk,2,range),2,diff)
-  meta$minRange <- apply(jjk,2,min)
-  meta$maxRange <- apply(jjk,2,max)
-  ff <- new("flowFrame", exprs= data.matrix(jjk), parameters=Biobase::AnnotatedDataFrame(meta))
-  dir.create("fcs_untransformed")
-
-
-  flowCore::write.FCS(ff, file.path("fcs_untransformed", paste(sub(pattern = "(.*)\\..*$", replacement = "\\1", basename(file)), ".fcs", sep= "")))
-    
-  
-#flowCore::write.FCS(ff, paste("fcs_untransformed\\", sub(pattern = "(.*)\\..*$", replacement = "\\1", basename(file)), ".fcs", sep= ""))
+  fcs_file_name<- paste(sub(pattern = "(.*)\\..*$", replacement = "\\1", basename(file)), ".fcs", sep= "")
+  make_fcs_from_df(jjk, "fcs_untransformed", fcs_file_name)   
   }
 
 
@@ -2242,7 +1515,9 @@ print(jjk1)
     jjk<- flowCore::exprs(BB)[ , our_head]
     
 
-
+    jjk<- jjk[rowSums(jjk[])>0, ]
+    jjk<- na.omit(jjk)
+    jjk <- jjk[!is.infinite(rowSums(jjk)),]
 
 
 
@@ -2264,17 +1539,8 @@ print(jjk1)
 
     
    
-  #meta <- data.frame(name=choice2, desc=paste('this is column',choice2,'from your CSV'))
-   meta <- data.frame(name=colnames(jjk), desc=colnames(jjk))
- 
-  meta$range <- apply(apply(jjk,2,range),2,diff)
-  meta$minRange <- apply(jjk,2,min)
-  meta$maxRange <- apply(jjk,2,max)
-  ff <- new("flowFrame", exprs= data.matrix(jjk), parameters=Biobase::AnnotatedDataFrame(meta))
-  print(dim(jjk))
-    
-
-  flowCore::write.FCS(ff, file.path("fcs_untransformed", paste(sub(pattern = "(.*)\\..*$", replacement = "\\1", basename(file)), ".fcs", sep= "")))
+  fcs_file_name<- paste(sub(pattern = "(.*)\\..*$", replacement = "\\1", basename(file)), ".fcs", sep= "")
+  make_fcs_from_df(jjk, "fcs_untransformed", fcs_file_name)   
   }
 })
 
@@ -2581,21 +1847,9 @@ length<- c()
 
 
 
-meta <- data.frame(name=colnames(newBBT),
-   desc=colnames(newBBT))
-
-
-meta$range <- apply(apply(newBBT,2,range),2,diff)
-meta$minRange <- apply(newBBT,2,min)
-meta$maxRange <- apply(newBBT,2,max)
-
-
-
-
-ff <- new("flowFrame", exprs= data.matrix(concatBBT), parameters=Biobase::AnnotatedDataFrame(meta))
-dir.create("concat")
-flowCore::write.FCS(ff, paste( "concat/", "concatBBT1", '.fcs', sep=''))
-
+fcs_file_name<- paste(sub(pattern = "(.*)\\..*$", replacement = "\\1", basename(file)), ".fcs", sep= "")
+make_fcs_from_df(concatBBT, "concat", "concatBBT1.fcs")   
+  
 
 
 set.seed(45)
