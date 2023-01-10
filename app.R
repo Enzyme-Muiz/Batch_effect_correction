@@ -2,6 +2,7 @@ library("shinyWidgets")
 library(shinybusy)
 library(dplyr)
 library(shinycookie)
+library(cookies)
 
 source("cytofRUVUI.R")
 source("BatchAdjustUI.R")
@@ -14,6 +15,7 @@ source("for_cytofRUV.R")
 source("make_fcs_file.R")
 
 ui <- fluidPage(
+  title = "Mass_Cytometry_Batch_Effect_Normalization",
   tags$head(tags$style(
     tags$link(rel = "stylesheet", href = "https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css")
   )),
@@ -237,6 +239,9 @@ server <- function(input, output, session) {
         j <- j + 1
         choicelist2[[i]] <- j
       }
+
+
+
       updatePickerInput(session, inputId = "variable7", choices = choicelist2)
     } else {
       choice <- c()
@@ -465,7 +470,7 @@ server <- function(input, output, session) {
       verbose = TRUE
     )
 
-    print("I have left")
+
 
     CytoNorm::CytoNorm.normalize(
       model = model,
@@ -479,6 +484,7 @@ server <- function(input, output, session) {
       clean = TRUE,
       verbose = TRUE
     )
+    print("I have left")
 
 
 
@@ -497,7 +503,7 @@ server <- function(input, output, session) {
 
 
     list_file <- list.files(path = ".", full.names = TRUE)
-
+    print(list_file)
     file_list_after <- stringr::str_starts(list_file, "./Norm_")
     file_list_after <- list_file[file_list_after]
     file_list_after_1 <- stringr::str_ends(file_list_after, "anchorstim.fcs")
