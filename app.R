@@ -3,6 +3,8 @@ library(shinybusy)
 library(dplyr)
 library(shinycookie)
 library(cookies)
+options(shiny.host = "192.168.0.13")
+options(shiny.port = 8888)
 
 source("cytofRUVUI.R")
 source("BatchAdjustUI.R")
@@ -114,13 +116,16 @@ server <- function(input, output, session) {
     onSessionEnded(function() {
       do.call(file.remove, list(list.files("to_be_corrected\\", pattern = "*.fcs", full.names = TRUE)))
     })
+    # onSessionEnded(function() {
+    #   unlink("CytofRUV_output\\CytofRUV_Norm_data_HC2_all_cl_20", recursive = TRUE)
+    # })
+    # onSessionEnded(function() {
+    #   do.call(file.remove, list(list.files("CytofRUV_output\\", full.names = TRUE)))
+    # })
     onSessionEnded(function() {
-      do.call(file.remove, list(list.files("CytofRUV_output\\", full.names = TRUE)))
+      do.call(file.remove, list(list.files("CytofRUV_output\\", recursive = TRUE, full.names = TRUE)))
     })
-    # onSessionEnded(function() {do.call(file.remove, list(list.files("CytofRUV_output\\CytofRUV_Norm_data_HC2_all_cl_20",  recursive = TRUE, full.names = TRUE)))})
-    onSessionEnded(function() {
-      unlink("CytofRUV_output\\CytofRUV_Norm_data_HC2_all_cl_20", recursive = TRUE)
-    })
+
 
     onSessionEnded(function() {
       do.call(file.remove, list(list.files("res_of_cytofRUV_before_confirmed", full.names = TRUE)))
@@ -315,9 +320,8 @@ server <- function(input, output, session) {
   ############## for cytofRUV preprocessing
   observeEvent(input$action20_preprocess, {
     try({
-      Panel_making_function("fcs_untransformed", "CytofRUV_output")
+      antigen_numbers <- Panel_making_function("fcs_untransformed", "CytofRUV_output")
       Metadata_making_function("fcs_untransformed", "CytofRUV_output")
-      print(getwd())
       list_in_fcs_untransformed <- list.files("fcs_untransformed", full.names = TRUE)
       file.copy(list_in_fcs_untransformed, "CytofRUV_output")
 
@@ -333,6 +337,7 @@ server <- function(input, output, session) {
         }
       }
       updatePickerInput(session, inputId = "choose_anchor", choices = rep_samples)
+      updateSliderInput(session, "svd_d_number", max = antigen_numbers - 5)
 
 
       setwd("..")
@@ -361,7 +366,10 @@ server <- function(input, output, session) {
       result <- rep_samples
       print(result)
 
-      loading_data(clusters_nb = clusters_nb, seed = seed, rep_samples = result, copy_results_here = "res_of_cytofRUV_before_confirmed")
+      loading_data(
+        clusters_nb = clusters_nb, seed = seed, rep_samples = result,
+        k_value = input$svd_d_number, copy_results_here = "res_of_cytofRUV_before_confirmed"
+      )
     })
 
 
@@ -399,7 +407,7 @@ server <- function(input, output, session) {
       result <- append(input$choose_anchor, paste0("vali", str_match(input$choose_anchor, "\\d")[, 1]))
       result <- rep_samples
       print(result)
-      loading_data(clusters_nb = clusters_nb, seed = seed, rep_samples = result)
+      loading_data(clusters_nb = clusters_nb, seed = seed, rep_samples = result, k_value = input$svd_d_number)
     })
   })
 

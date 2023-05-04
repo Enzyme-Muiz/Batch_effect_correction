@@ -19,7 +19,7 @@ library(readxl)
 library(stringr)
 source("make_fcs_file.R")
 # source("normalize_function.R")
-loading_data <- function(clusters_nb = 20, seed = 1234, rep_samples, copy_results_here = "fcs_untransformed") {
+loading_data <- function(clusters_nb = 20, seed = 1234, rep_samples, k_value, copy_results_here = "fcs_untransformed") {
   try({
     output_dir <- "CytofRUV_output"
     if (!dir.exists(output_dir)) {
@@ -82,7 +82,7 @@ loading_data <- function(clusters_nb = 20, seed = 1234, rep_samples, copy_result
     cluster_list_rep_samples <- list(seq(1, as.numeric(clusters_nb)))
     print(cluster_list_rep_samples)
     print("4")
-    k_value <- 5
+    k_value <- k_value
     seed <- 1234
     normalise_data(data = data, raw_data = raw_data, rep_samples = rep_samples, norm_clusters = cluster_list_rep_samples, k = k_value, num_clusters = clusters_nb, wd_data = wd_data, dir_norm_data = dir_name_norm_data)
     print(getwd())
