@@ -3,6 +3,7 @@ library(shinybusy)
 library(dplyr)
 library(shinycookie)
 library(cookies)
+library(tidyverse)
 options(shiny.host = "192.168.0.13")
 options(shiny.port = 8888)
 
@@ -378,6 +379,7 @@ server <- function(input, output, session) {
     )
 
     mmd_result <- mmd_result$size
+    rownames(mmd_result) <- colnames(mmd_result)
     output$table_outcome_cytofRuv <- renderTable({
       mmd_result
     })
@@ -1082,9 +1084,16 @@ server <- function(input, output, session) {
     )
 
     mmd_result <- mmd_result$size
+    mmd_result<- as.data.frame(mmd_result)
+    mmd_result_for_plot <- mmd_result %>%
+    rownames_to_column() %>%
+    gather(colname, value, -rowname)
     # plot1<- grid.table(mmd_result)
+    mmd_plot<- ggplot(mmd_result_for_plot, aes(x = rowname, y = colname, fill = value)) +
+    geom_tile()
     output$oid2 <- renderPlot({
-      grid.table(mmd_result)
+      #grid.table(mmd_result)
+      mmd_plot
     })
   })
 
@@ -1772,14 +1781,11 @@ server <- function(input, output, session) {
         for (w in c(1:number_of_markers))
         {
           bbc <- qq[league[[as.character(i)]]] + 1
-          print("hi1")
           cnn <- qq[league[[as.character(i)]] + 1]
-          print("hi2")
           print(league[[as.character(q)]])
           nta <- qq[league[[as.character(q)]]] + 1
-          print("hi3")
           fox <- qq[league[[as.character(q)]] + 1]
-          print("hi4")
+
 
           rommX <- concatBBT[c(bbc:cnn), ]
           rommY <- concatBBT[c(nta:fox), ]
@@ -1805,7 +1811,7 @@ server <- function(input, output, session) {
     data.table::setDT(xdata, keep.rownames = "ID")[]
     names(xdata)[1] <- "ID"
     melted <- reshape2::melt(xdata, id.vars = "ID")
-
+    print(melted)
 
     plot1 <- ggplot2::ggplot(data = melted, ggplot2::aes(x = value, y = ID, group = variable, col = variable)) +
       ggplot2::geom_point(shape = 21, size = 3, stroke = 2) +
@@ -1846,7 +1852,6 @@ server <- function(input, output, session) {
   observeEvent(input$action5, {
     hjk <- "to_be_corrected\\Batch_1_anchorstim.fcs"
     rom <- list.files(path = "fcs_untransformed/", pattern = ("*stim.fcs|*nonanchor_vali.fcs"), full.names = TRUE)
-
     length <- c()
     for (xyz in rom)
     {
@@ -1862,7 +1867,6 @@ server <- function(input, output, session) {
 
 
 
-
     concatBBT <- c()
     for (jj in rom)
     {
@@ -1871,13 +1875,8 @@ server <- function(input, output, session) {
 
       concatBBT <- rbind(concatBBT, newBBT)
     }
-
-
-
-    fcs_file_name <- paste(sub(pattern = "(.*)\\..*$", replacement = "\\1", basename(file)), ".fcs", sep = "")
     make_fcs_from_df(concatBBT, "concat", "concatBBT1.fcs")
-
-
+    
 
     set.seed(45)
     fSOM <- FlowSOM::FlowSOM("concat/concatBBT1.fcs",
@@ -1954,6 +1953,7 @@ server <- function(input, output, session) {
       ggplot2::theme(axis.text = ggplot2::element_text(face = "bold", colour = "black", size = 12)) +
       ggplot2::theme(axis.title.y = ggplot2::element_text(face = "bold", colour = "black")) +
       ggplot2::theme(panel.border = ggplot2::element_rect(colour = "black", fill = NA, size = 1))
+
 
 
 

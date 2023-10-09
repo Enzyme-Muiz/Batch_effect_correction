@@ -12,7 +12,7 @@ cytofRUVUI <- function() {
       sidebarPanel(
         fluidRow(
           sliderInput("cluster_cytofRUV", "cluster_number:",
-            min = 1, max = 20,
+            min = 3, max = 20,
             value = 5
           ),
           numericInput(
@@ -34,7 +34,7 @@ cytofRUVUI <- function() {
             # options = list(`actions-box` = TRUE),
             # multiple = TRUE
           ),
-          actionButton("action21_Normalize", "Normalize"),
+          actionButton("action21_Normalize", "Normalize", title = "this button will cytofUV-correct batch effect"),
           actionButton("action_confirm_cytoRUV", "confirm_CytofRUV_Adjust")
         )
       ),
